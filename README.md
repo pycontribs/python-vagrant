@@ -14,18 +14,29 @@ This package is _alpha_ and its API is not guaranteed to be stable.  The API
 attempts to be congruent with the `vagrant` API terminology, to facilitate
 knowledge transfer for users already familiar with Vagrant.
 
+I wanted python bindings for Vagrant so I could programmatically access my
+vagrant box using Fabric.  Why are you interested?
+
+
+## Contribute
+
+If you use python and vagrant and this project does not do what you want,
+please open an issue or a pull request on github,
+https://github.com/todddeluca/python-vagrant.
+
 
 ## Requirements
 
 - A working installation of Vagrant.
 - Vagrant requires VirtualBox.
+- Probably python 2.7 (since that is the only version it has been tested with.)
 
 
 ## Installation
 
 ### Install from pypi.python.org
 
-Download and install diabric.
+Download and install python-vagrant:
 
     pip install python-vagrant
 
@@ -39,13 +50,18 @@ Clone and install python-vagrant
     python setup.py install
 
 
-## Usage with Fabric
+## Usage
 
 A contrived example of starting a vagrant box (using a Vagrantfile from the
 current directory) and running a fabric task on it:
 
     import vagrant
-    from fabric.api import env, execute
+    from fabric.api import env, execute, task, run
+
+    @task
+    def mytask():
+        run('echo $USER')
+
 
     v = vagrant.Vagrant()
     v.up()
@@ -53,4 +69,7 @@ current directory) and running a fabric task on it:
     env.key_filename = v.keyfile()
     env.disable_known_hosts = True # useful for when the vagrant box ip changes.
     execute(mytask) # run a fabric task on the vagrant host.
+
+
+
 
