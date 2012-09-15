@@ -3,7 +3,8 @@
 
 This fork introduces the following changes over the original:
 
-- Rewritten test suite allowing easier addition of new features
+- Rewritten test suite allowing for easier addition of new features
+- 
 
 ## Introduction
 
@@ -40,18 +41,12 @@ https://github.com/todddeluca/python-vagrant.
 
 ## Installation
 
-### Install from pypi.python.org
-
-Download and install python-vagrant:
-
-    pip install python-vagrant
-
-### Install from github.com
+### Install from github.com (this fork)
 
 Clone and install python-vagrant
 
     cd ~
-    git clone git@github.com:todddeluca/python-vagrant.git
+    git clone git@github.com:kamilgrymuza/python-vagrant.git
     cd python-vagrant
     python setup.py install
 
@@ -75,7 +70,3 @@ current directory) and running a fabric task on it:
     env.key_filename = v.keyfile()
     env.disable_known_hosts = True # useful for when the vagrant box ip changes.
     execute(mytask) # run a fabric task on the vagrant host.
-
-
-
-
