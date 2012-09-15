@@ -1,4 +1,10 @@
 
+## About this fork
+
+This fork introduces the following changes over the original:
+
+- Rewritten test suite allowing easier addition of new features
+
 ## Introduction
 
 Python-vagrant is a python module that provdes a thin wrapper around the
