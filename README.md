@@ -8,6 +8,8 @@ This fork introduces the following changes over the original:
 - Support for sandbox mode using the Sahara gem 
   (https://github.com/jedi4ever/sahara).
 - Support for box-related commands - box_add(), box_list(), box_remove() methods. 
+- Support for provisioning - up() accepts no_provision and there is the provision()
+  method.
 
 ## Introduction
 

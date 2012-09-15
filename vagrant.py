@@ -57,11 +57,13 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = None
 
-    def up(self):
+    def up(self, no_provision=False):
         '''
         Launch the Vagrant box.
         '''
         command = "up"
+        if no_provision:
+            command = "{} --no-provision".format(command)
         self._call_vagrant_command(command)
         self.conf() # cache configuration
         
@@ -289,6 +291,13 @@ class Vagrant(object):
         Removes the box with given name.
         '''
         command = "box remove '{}'".format(box_name)
+        self._call_vagrant_command(command)
+    
+    def provision(self):
+        '''
+        Runs the provisioners defined in the Vagrantfile.
+        '''
+        command = "provision"
         self._call_vagrant_command(command)
         
     def _parse_vagrant_sandbox_status(self, vagrant_output):

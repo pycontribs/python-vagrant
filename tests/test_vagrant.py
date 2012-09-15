@@ -81,7 +81,8 @@ class VagrantTest(unittest.TestCase):
     
     def tearDown(self):
         '''
-        Destroys the VM after each test method finishes.
+        Destroys the VM after each test method finishes and closes fabric
+        connections.
         
         It is not an error if the VM has already been destroyed.
         '''
@@ -218,6 +219,7 @@ class VagrantTest(unittest.TestCase):
                 "After bringing the VM up again the status should be 'on', " +
                 "got:'{}'".format( sandbox_status ) )
             
+            self._close_fabric_connections()
             test_file_contents = self._test_file_contents()
             eq_( test_file_contents, None, "There should be no test file" )
             
@@ -238,28 +240,29 @@ class VagrantTest(unittest.TestCase):
             self._write_test_file( "bar" )
             test_file_contents = self._test_file_contents()
             eq_( test_file_contents, "bar", "The test file should read 'bar'" )
-            self._close_fabric_connections()
-            v.sandbox_rollback()
             
+            self._close_fabric_connections()
+            v.sandbox_rollback()            
             test_file_contents = self._test_file_contents()
             eq_( test_file_contents, "foo", "The test file should read 'foo'" )
-            
-            v.destroy()
-            sandbox_status = v.sandbox_status()
-            eq_(sandbox_status, "unknown", 
-                "After destroying the VM the status should be 'unknown', " +
-                "got:'{}'".format( sandbox_status ) )
             
             sandbox_status = v._parse_vagrant_sandbox_status( "Usage: ..." )
             eq_(sandbox_status, "not installed", "When 'vagrant sandbox status'" +
                 " outputs vagrant help status should be 'not installed', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            self._close_fabric_connections()
+            v.destroy()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "unknown", 
+                "After destroying the VM the status should be 'unknown', " +
                 "got:'{}'".format( sandbox_status ) )
 
     def test_boxes(self):
         '''
         Test methods for manipulating boxes - adding, listing, removing.
         '''
-        v = vagrant.Vagrant(self.td)        
+        v = vagrant.Vagrant(self.td)
         box_name = "python-vagrant-dummy-box"
         
         boxes = self._boxes_list()
@@ -285,8 +288,51 @@ class VagrantTest(unittest.TestCase):
         boxes = self._boxes_list()        
         eq_(box_name in boxes, False,
             "There should be no dummy box after it's been deleted")
-        
     
+    def test_provisioning(self):
+        '''
+        Test provisioning support.
+        '''
+        v = vagrant.Vagrant(self.td)
+        
+        vagrant_file_path = os.path.join(self.td, "Vagrantfile")
+        self._add_provisioner_config(vagrant_file_path)
+        
+        v.up(True)
+        test_file_contents = self._test_file_contents()
+        eq_( test_file_contents, None, "There should be no test file after up()" )
+        
+        v.provision()
+        test_file_contents = self._test_file_contents()
+        print "Contents: {}".format( test_file_contents )
+        eq_( test_file_contents, "foo", "The test file should contain 'foo'" )
+    
+    def _add_provisioner_config(self, vagrant_file_path):
+        '''
+        Extends the given Vagrantfile with provisioner configuration.
+        '''
+        provisioner_configuration = '''
+        Vagrant::Config.run do |config|
+          config.vm.provision :shell, :inline => "echo 'foo' > /home/vagrant/python_vagrant_test_file"
+        end
+        '''
+        with open(vagrant_file_path, 'r') as vagrantfile:
+            vagrantfile_lines = vagrantfile.readlines()
+        
+        modified_lines = []
+        for line in vagrantfile_lines:
+            if "end" in line and not "#" in line:
+                break
+            modified_lines.append( line )
+        
+        for line in provisioner_configuration.splitlines():
+            modified_lines.append(line)
+        
+        modified_lines.append( "end" )
+        
+        with open(vagrant_file_path, 'w') as vagrantfile:
+            vagrantfile.write( '\n'.join(modified_lines))
+        
     def _boxes_list(self):
         '''
         Returns a list of available box names.
@@ -322,7 +368,7 @@ class VagrantTest(unittest.TestCase):
         '''
         @task
         def write_file_contents(file_contents):
-            return run('echo "{}" > ~/python_vagrant_test_file'.format(
+            return run('echo "{}" > /home/vagrant/python_vagrant_test_file'.format(
                 file_contents))
         contents = self._execute_task_in_vm(write_file_contents, file_contents)
     
@@ -333,7 +379,7 @@ class VagrantTest(unittest.TestCase):
         '''    
         @task
         def read_file_contents():
-            return run('cat ~/python_vagrant_test_file')
+            return run('cat /home/vagrant/python_vagrant_test_file')
         
         contents = self._execute_task_in_vm(read_file_contents).values()[ 0 ]
         if "No such file or directory" in contents:
