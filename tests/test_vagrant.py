@@ -255,6 +255,48 @@ class VagrantTest(unittest.TestCase):
                 " outputs vagrant help status should be 'not installed', " +
                 "got:'{}'".format( sandbox_status ) )
 
+    def test_boxes(self):
+        '''
+        Test methods for manipulating boxes - adding, listing, removing.
+        '''
+        v = vagrant.Vagrant(self.td)        
+        box_name = "python-vagrant-dummy-box"
+        
+        boxes = self._boxes_list()
+        if box_name in boxes:
+            v._call_vagrant_command( "box remove {}".format( box_name ) )
+        
+        boxes = self._boxes_list()
+        eq_(box_name in boxes, False,
+            "There should be no dummy box before it's added")
+        
+        v.box_add(box_name, "https://s3-eu-west-1.amazonaws.com/rosstimson-vagrant-boxes/openbsd50-i386.box")
+        boxes = self._boxes_list()        
+        eq_(box_name in boxes, True,
+            "There should be a dummy box in the list of boxes")
+        
+        boxes = self._boxes_list()
+        reported_boxes = v.box_list()
+        for box in boxes:
+            eq_(box in reported_boxes, True,
+                "The box '{}' should be in the list returned by box_list()".format(box))
+    
+        v.box_remove(box_name)
+        boxes = self._boxes_list()        
+        eq_(box_name in boxes, False,
+            "There should be no dummy box after it's been deleted")
+        
+    
+    def _boxes_list(self):
+        '''
+        Returns a list of available box names.
+        '''
+        v = vagrant.Vagrant(self.td)
+        command = 'box list'
+        boxes = [line.strip() for line in \
+            v._vagrant_command_output(command).splitlines()]
+        return boxes
+        
     def _close_fabric_connections(self):
         '''
         Closes all fabric connections to avoids "inactive" ssh connection errors.

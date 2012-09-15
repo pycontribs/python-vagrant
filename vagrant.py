@@ -269,6 +269,28 @@ class Vagrant(object):
         command = "sandbox rollback"
         self._call_vagrant_command(command)
 
+    def box_add(self, box_name, box_url):
+        '''
+        Adds a box with given name, from given url.
+        '''
+        command = "box add '{}' '{}'".format(box_name, box_url)
+        self._call_vagrant_command(command)
+        
+    def box_list(self):
+        '''
+        Returns a list of all available box names.
+        '''
+        command ="box list"
+        output = self._vagrant_command_output(command)
+        return [line.strip() for line in output.splitlines()]
+    
+    def box_remove(self, box_name):
+        '''
+        Removes the box with given name.
+        '''
+        command = "box remove '{}'".format(box_name)
+        self._call_vagrant_command(command)
+        
     def _parse_vagrant_sandbox_status(self, vagrant_output):
         '''
         Returns the status of the sandbox mode given output from 
