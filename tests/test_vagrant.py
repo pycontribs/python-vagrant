@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from fabric.api import env, execute, task, run
+from fabric.state import connections
 from nose.tools import eq_
 
 import vagrant
@@ -164,3 +166,135 @@ class VagrantTest(unittest.TestCase):
         keyfile = v.keyfile()
         eq_(keyfile, parsed_config[ "IdentityFile" ])
 
+    def test_vm_sandbox_mode(self):
+        '''
+        Test methods for enabling/disabling the sandbox mode 
+        and committing/rolling back changes.
+        
+        This depends on the Sahara gem (gem install sahara).
+        '''
+        command = "vagrant sandbox status"
+        output = subprocess.check_output(
+                command, cwd=self.td, shell=True)
+        sahara_installed = True if not "Usage" in output else False
+        eq_(sahara_installed, True, "Sahara gem should be installed")
+        
+        if sahara_installed:
+            v = vagrant.Vagrant(self.td)
+            
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "unknown", 
+                "Before the VM goes up the status should be 'unknown', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            v.up()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "off", 
+                "After the VM goes up the status should be 'off', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            v.sandbox_enable()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "on", 
+                "After enabling the sandbox mode the status should be 'on', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            v.sandbox_disable()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "off", 
+                "After disabling the sandbox mode the status should be 'off', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            v.sandbox_enable()
+            v.halt()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "on", 
+                "After halting the VM the status should be 'on', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            v.up()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "on", 
+                "After bringing the VM up again the status should be 'on', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, None, "There should be no test file" )
+            
+            self._write_test_file( "foo" )
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
+            
+            self._close_fabric_connections()
+            v.sandbox_rollback()            
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, None, "There should be no test file" )
+            
+            self._write_test_file( "foo" )
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
+            self._close_fabric_connections()
+            v.sandbox_commit()
+            self._write_test_file( "bar" )
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, "bar", "The test file should read 'bar'" )
+            self._close_fabric_connections()
+            v.sandbox_rollback()
+            
+            test_file_contents = self._test_file_contents()
+            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
+            
+            v.destroy()
+            sandbox_status = v.sandbox_status()
+            eq_(sandbox_status, "unknown", 
+                "After destroying the VM the status should be 'unknown', " +
+                "got:'{}'".format( sandbox_status ) )
+            
+            sandbox_status = v._parse_vagrant_sandbox_status( "Usage: ..." )
+            eq_(sandbox_status, "not installed", "When 'vagrant sandbox status'" +
+                " outputs vagrant help status should be 'not installed', " +
+                "got:'{}'".format( sandbox_status ) )
+
+    def _close_fabric_connections(self):
+        '''
+        Closes all fabric connections to avoids "inactive" ssh connection errors.
+        '''
+        for key in connections.keys():
+            connections[key].close()
+            del connections[key]
+
+    def _execute_task_in_vm(self, task, *args, **kwargs):
+        '''
+        Executes the task on the VM and returns the output.
+        '''
+        v = vagrant.Vagrant(self.td)
+        env.hosts = [v.user_hostname_port()]
+        env.key_filename = v.keyfile()
+        env.warn_only = True
+        env.disable_known_hosts = True #useful for when the vagrant box ip changes.
+        return execute(task, *args, **kwargs)
+    
+    def _write_test_file(self, file_contents):
+        '''
+        Writes given contents to the test file.
+        '''
+        @task
+        def write_file_contents(file_contents):
+            return run('echo "{}" > ~/python_vagrant_test_file'.format(
+                file_contents))
+        contents = self._execute_task_in_vm(write_file_contents, file_contents)
+    
+    def _test_file_contents(self):
+        '''
+        Returns the contents of the test file stored in the VM or None if there
+        is no file.
+        '''    
+        @task
+        def read_file_contents():
+            return run('cat ~/python_vagrant_test_file')
+        
+        contents = self._execute_task_in_vm(read_file_contents).values()[ 0 ]
+        if "No such file or directory" in contents:
+            contents = None
+        return contents
+        

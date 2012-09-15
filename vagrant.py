@@ -1,5 +1,3 @@
-
-
 '''
 Python bindings for working with Vagrant and Vagrantfiles.  Do useful things
 with the `vagrant` CLI without the boilerplate (and errors) of calling
@@ -33,11 +31,6 @@ Dependencies:
 import os
 import subprocess
 
-
-####################
-# VAGRANT FUNCTIIONS
-
-
 class Vagrant(object):
     '''
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
@@ -68,21 +61,24 @@ class Vagrant(object):
         '''
         Launch the Vagrant box.
         '''
-        subprocess.check_call('vagrant up', shell=True, cwd=self.root)
+        command = "up"
+        self._call_vagrant_command(command)
         self.conf() # cache configuration
         
     def halt(self):
         '''
         Halt the Vagrant box.
         '''
-        subprocess.check_call('vagrant halt', shell=True, cwd=self.root)
+        command = "halt"
+        self._call_vagrant_command(command)
         self.conf() # cache configuration
 
     def destroy(self):
         '''
         Terminate the running Vagrant box.
         '''
-        subprocess.check_call('vagrant destroy -f', shell=True, cwd=self.root)
+        command = "destroy -f"
+        self._call_vagrant_command(command)
         self._cached_conf = None # remove cached configuration
 
     def status(self):
@@ -94,8 +90,8 @@ class Vagrant(object):
             None if no status is found
         There might be other statuses, but the Vagrant docs were unclear.
         '''
-        output = subprocess.check_output('vagrant status', shell=True,
-                                         cwd=self.root)
+        command = "status"
+        output = self._vagrant_command_output(command)
         # example output
         '''
         Current VM states:
@@ -150,8 +146,8 @@ class Vagrant(object):
                 IdentitiesOnly yes
         '''
         # capture ssh configuration from vagrant
-        return subprocess.check_output('vagrant ssh-config', shell=True,
-                                       cwd=self.root)
+        command = "ssh-config"
+        return self._vagrant_command_output(command)
 
     def user(self):
         '''
@@ -228,7 +224,70 @@ class Vagrant(object):
         port_suffix = ':' + port if port else ''
         return user_prefix + self.hostname() + port_suffix
 
+    def sandbox_status(self):
+        '''
+        Returns the status of the sandbox mode.
+        
+        Possible values are:
+        - on
+        - off
+        - unknown
+        - not installed
+        '''
+        command = "sandbox status"
+        vagrant_sandbox_output = self._vagrant_command_output(command)
+        return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
+    
+    def sandbox_enable(self):
+        '''
+        Enables the sandbox mode. 
+        
+        This requires the Sahara gem to be installed 
+        (https://github.com/jedi4ever/sahara).
+        '''
+        command = "sandbox on"
+        self._call_vagrant_command(command)
+        
+    def sandbox_disable(self):
+        '''
+        Disables the sandbox mode.
+        '''
+        command = "sandbox off"
+        self._call_vagrant_command(command)
+        
+    def sandbox_commit(self):
+        '''
+        Permanently writes all the changes made to the VM.
+        '''
+        command = "sandbox commit"
+        self._call_vagrant_command(command)
+        
+    def sandbox_rollback(self):
+        '''
+        Reverts all the changes made to the VM since the last commit.
+        '''
+        command = "sandbox rollback"
+        self._call_vagrant_command(command)
 
+    def _parse_vagrant_sandbox_status(self, vagrant_output):
+        '''
+        Returns the status of the sandbox mode given output from 
+        'vagrant sandbox status'.
+        '''
+        # typical output
+        # [default] - snapshot mode is off
+        # or
+        # [default] - machine not created
+        # if the box VM is down
+        tokens = [ token.strip() for token in vagrant_output.split(' ') ]
+        if tokens[0] == 'Usage:':
+            sahara_status = 'not installed'
+        elif "{} {}".format(tokens[-2], tokens[-1]) == 'not created':
+            sahara_status = 'unknown'
+        else:
+            sahara_status = tokens[-1] 
+        return sahara_status
+    
     def _parse_config(self, ssh_config=None):
         '''
         This ghetto parser does not parse the full grammar of an ssh config
@@ -258,5 +317,27 @@ class Vagrant(object):
 
         return conf
 
+    def _vagrant_command_string(self, command):
+        '''
+        Returns the command with 'vagrant ' prepended.
+        '''
+        return "vagrant {}".format(command)
 
-
+    def _call_vagrant_command(self, command):
+        '''
+        Wrapper around subprocess.check_call
+        
+        :param command: string which will be appended to 'vagrant ' and called
+        in a shell using subprocess check_call.
+        '''
+        command = self._vagrant_command_string(command)
+        return subprocess.check_call(command, shell=True, cwd=self.root)
+    
+    def _vagrant_command_output(self, command):
+        '''
+        Wrapper around subprocess.check_output
+        
+        :param command: same as for _call_vagrant_command.
+        '''
+        command = self._vagrant_command_string(command)
+        return subprocess.check_output(command, shell=True, cwd=self.root)
