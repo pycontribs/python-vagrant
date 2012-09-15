@@ -70,6 +70,13 @@ class Vagrant(object):
         '''
         subprocess.check_call('vagrant up', shell=True, cwd=self.root)
         self.conf() # cache configuration
+        
+    def halt(self):
+        '''
+        Halt the Vagrant box.
+        '''
+        subprocess.check_call('vagrant halt', shell=True, cwd=self.root)
+        self.conf() # cache configuration
 
     def destroy(self):
         '''

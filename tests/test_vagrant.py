@@ -91,7 +91,7 @@ class VagrantTest(unittest.TestCase):
         except subprocess.CalledProcessError:
             pass
     
-    def test_status(self):
+    def test_vm_status(self):
         '''
         Test whether vagrant.status() correctly reports state of the VM.
         '''
@@ -115,12 +115,17 @@ class VagrantTest(unittest.TestCase):
         
     def test_vm_lifecycle(self):
         '''
-        Test methods controlling the VM - up(), destory().
+        Test methods controlling the VM - up(), destroy().
         '''
         v = vagrant.Vagrant(self.td)
         eq_(v.status(), v.NOT_CREATED)
+            
         v.up()
         eq_(v.status(), v.RUNNING)
+        
+        v.halt()
+        eq_(v.status(), v.POWEROFF)
+        
         v.destroy()
         eq_(v.status(), v.NOT_CREATED)
         
@@ -158,3 +163,4 @@ class VagrantTest(unittest.TestCase):
         
         keyfile = v.keyfile()
         eq_(keyfile, parsed_config[ "IdentityFile" ])
+

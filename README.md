@@ -4,6 +4,7 @@
 This fork introduces the following changes over the original:
 
 - Rewritten test suite allowing for easier addition of new features
+- The halt() method which stops the VM without destroying it
 
 ## Introduction
 
