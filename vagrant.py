@@ -57,11 +57,11 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = None
 
-    def init(self):
+    def init(self, box_name):
         '''
         Init the VM.
         '''
-        command = "init"
+        command = "init {}".format( box_name )
         self._call_vagrant_command(command)
         self.conf() # cache configuration
         
