@@ -3,8 +3,9 @@
 
 This fork introduces the following changes over the original:
 
-- Rewritten test suite allowing for easier addition of new features
-- The halt() method which stops the VM without destroying it
+- Rewritten test suite allowing for easier addition of new features.
+- The init() method which initialized the VM based on the named base box.
+- The halt() method which stops the VM without destroying it.
 - Support for sandbox mode using the Sahara gem 
   (https://github.com/jedi4ever/sahara).
 - Support for box-related commands - box_add(), box_list(), box_remove() methods. 

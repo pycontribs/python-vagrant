@@ -63,7 +63,7 @@ class Vagrant(object):
         '''
         command = "init {}".format( box_name )
         self._call_vagrant_command(command)
-        self.conf() # cache configuration
+        #self.conf() # cache configuration
         
     def up(self, no_provision=False):
         '''
