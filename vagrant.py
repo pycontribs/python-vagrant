@@ -31,6 +31,7 @@ Dependencies:
 import os
 import subprocess
 
+
 class Vagrant(object):
     '''
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
@@ -44,9 +45,15 @@ class Vagrant(object):
     '''
 
     # statuses
-    RUNNING = 'running' # vagrant up
-    NOT_CREATED = 'not created' # vagrant destroy
-    POWEROFF = 'poweroff' # vagrant halt
+    RUNNING = 'running'  # vagrant up
+    NOT_CREATED = 'not created'  # vagrant destroy
+    POWEROFF = 'poweroff'  # vagrant halt
+    BASE_BOXES = {
+        'ubuntu-Lucid32': 'http://files.vagrantup.com/lucid32.box',
+        'ubuntu-lucid64': 'http://files.vagrantup.com/lucid64.box',
+        'ubuntu-precise32': 'http://files.vagrantup.com/precise32.box',
+        'ubuntu-precise64': 'http://files.vagrantup.com/precise64.box',
+    }
 
     def __init__(self, root=None):
         '''
@@ -61,10 +68,16 @@ class Vagrant(object):
         '''
         Init the VM.
         '''
-        command = "init {}".format( box_name )
+        print "Checking for " + box_name
+        if box_name not in self.box_list():
+            if self._confirm(box_name + " not installed. Add box?"):
+                self.box_add(box_name, self.BASE_BOXES[box_name])
+            else:
+                exit()
+        command = "init {}".format(box_name)
         self._call_vagrant_command(command)
         #self.conf() # cache configuration
-        
+
     def up(self, no_provision=False):
         '''
         Launch the Vagrant box.
@@ -73,15 +86,15 @@ class Vagrant(object):
         if no_provision:
             command = "{} --no-provision".format(command)
         self._call_vagrant_command(command)
-        self.conf() # cache configuration
-        
+        self.conf()  # cache configuration
+
     def halt(self):
         '''
         Halt the Vagrant box.
         '''
         command = "halt"
         self._call_vagrant_command(command)
-        self.conf() # cache configuration
+        self.conf()  # cache configuration
 
     def destroy(self):
         '''
@@ -89,7 +102,7 @@ class Vagrant(object):
         '''
         command = "destroy -f"
         self._call_vagrant_command(command)
-        self._cached_conf = None # remove cached configuration
+        self._cached_conf = None  # remove cached configuration
 
     def status(self):
         '''
@@ -237,7 +250,7 @@ class Vagrant(object):
     def sandbox_status(self):
         '''
         Returns the status of the sandbox mode.
-        
+
         Possible values are:
         - on
         - off
@@ -247,31 +260,31 @@ class Vagrant(object):
         command = "sandbox status"
         vagrant_sandbox_output = self._vagrant_command_output(command)
         return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
-    
+
     def sandbox_enable(self):
         '''
-        Enables the sandbox mode. 
-        
-        This requires the Sahara gem to be installed 
+        Enables the sandbox mode.
+
+        This requires the Sahara gem to be installed
         (https://github.com/jedi4ever/sahara).
         '''
         command = "sandbox on"
         self._call_vagrant_command(command)
-        
+
     def sandbox_disable(self):
         '''
         Disables the sandbox mode.
         '''
         command = "sandbox off"
         self._call_vagrant_command(command)
-        
+
     def sandbox_commit(self):
         '''
         Permanently writes all the changes made to the VM.
         '''
         command = "sandbox commit"
         self._call_vagrant_command(command)
-        
+
     def sandbox_rollback(self):
         '''
         Reverts all the changes made to the VM since the last commit.
@@ -285,32 +298,32 @@ class Vagrant(object):
         '''
         command = "box add '{}' '{}'".format(box_name, box_url)
         self._call_vagrant_command(command)
-        
+
     def box_list(self):
         '''
         Returns a list of all available box names.
         '''
-        command ="box list"
+        command = "box list"
         output = self._vagrant_command_output(command)
         return [line.strip() for line in output.splitlines()]
-    
+
     def box_remove(self, box_name):
         '''
         Removes the box with given name.
         '''
         command = "box remove '{}'".format(box_name)
         self._call_vagrant_command(command)
-    
+
     def provision(self):
         '''
         Runs the provisioners defined in the Vagrantfile.
         '''
         command = "provision"
         self._call_vagrant_command(command)
-        
+
     def _parse_vagrant_sandbox_status(self, vagrant_output):
         '''
-        Returns the status of the sandbox mode given output from 
+        Returns the status of the sandbox mode given output from
         'vagrant sandbox status'.
         '''
         # typical output
@@ -318,15 +331,15 @@ class Vagrant(object):
         # or
         # [default] - machine not created
         # if the box VM is down
-        tokens = [ token.strip() for token in vagrant_output.split(' ') ]
+        tokens = [token.strip() for token in vagrant_output.split(' ')]
         if tokens[0] == 'Usage:':
             sahara_status = 'not installed'
         elif "{} {}".format(tokens[-2], tokens[-1]) == 'not created':
             sahara_status = 'unknown'
         else:
-            sahara_status = tokens[-1] 
+            sahara_status = tokens[-1]
         return sahara_status
-    
+
     def _parse_config(self, ssh_config=None):
         '''
         This ghetto parser does not parse the full grammar of an ssh config
@@ -335,7 +348,7 @@ class Vagrant(object):
         one Host section, the default vagrant host.  It assumes that every line
         is of the form 'key  value', where key is a single token without any
         whitespace and value is the remaining part of the line.  All leading
-        and trailing whitespace is removed from key and value.  For example: 
+        and trailing whitespace is removed from key and value.  For example:
 
         '    User vagrant\n'
 
@@ -350,8 +363,8 @@ class Vagrant(object):
             ssh_config = self.ssh_config()
 
         # skip blank lines and comment lines
-        conf = dict(line.strip().split(None, 1) for line in 
-                    ssh_config.splitlines() if line.strip() and 
+        conf = dict(line.strip().split(None, 1) for line in
+                    ssh_config.splitlines() if line.strip() and
                     not line.strip().startswith('#'))
 
         return conf
@@ -365,18 +378,58 @@ class Vagrant(object):
     def _call_vagrant_command(self, command):
         '''
         Wrapper around subprocess.check_call
-        
+
         :param command: string which will be appended to 'vagrant ' and called
         in a shell using subprocess check_call.
         '''
         command = self._vagrant_command_string(command)
         return subprocess.check_call(command, shell=True, cwd=self.root)
-    
+
     def _vagrant_command_output(self, command):
         '''
         Wrapper around subprocess.check_output
-        
+
         :param command: same as for _call_vagrant_command.
         '''
         command = self._vagrant_command_string(command)
         return subprocess.check_output(command, shell=True, cwd=self.root)
+
+    def _confirm(self, prompt=None, resp=False):
+        '''
+        Prompts for yes or no response from the user. Returns True for yes
+        and False for no.
+
+        :prompt resp: The default value assumed by the caller when
+        user simply types ENTER.
+
+        >>> confirm(prompt='Create Directory?', resp=True)
+        Create Directory? [Y/n]:
+        True
+        >>> confirm(prompt='Create Directory?', resp=False)
+        Create Directory? [y/N]:
+        False
+        >>> confirm(prompt='Create Directory?', resp=False)
+        Create Directory? [y/N]: y
+        True
+
+        '''
+
+        if prompt is None:
+            prompt = 'Confirm'
+
+        if resp:
+            prompt = '%s [%s/%s]: ' % (prompt, 'Y', 'n')
+        else:
+            prompt = '%s [%s/%s]: ' % (prompt, 'y', 'N')
+
+        while True:
+            ans = raw_input(prompt)
+            if not ans:
+                return resp
+            if ans not in ['y', 'Y', 'n', 'N']:
+                print 'Please enter y or n.'
+                continue
+            if ans == 'y' or ans == 'Y':
+                return True
+            if ans == 'n' or ans == 'N':
+                return False
