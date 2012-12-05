@@ -64,14 +64,20 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = None
 
-    def init(self, box_name):
+    def init(self, box_name, box_path=None):
         '''
         Init the VM.
         '''
         print "Checking for " + box_name
         if box_name not in self.box_list():
             if self._confirm(box_name + " not installed. Add box?"):
-                self.box_add(box_name, self.BASE_BOXES[box_name])
+                if box_path is None:
+                    try:
+                        box_path = self.BASE_BOXES[box_name]
+                    except KeyError:
+                        print "Box not found in url list. Please specify the box path/url."
+                        exit()
+                self.box_add(box_name, box_path)
             else:
                 exit()
         command = "init {}".format(box_name)
