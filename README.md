@@ -1,5 +1,8 @@
-
 ## About this fork
+
+Changes in this fork:
+
+- Added auto download of official boxes in the init() 
 
 This fork introduces the following changes over the original:
 
