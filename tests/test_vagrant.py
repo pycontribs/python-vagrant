@@ -358,16 +358,10 @@ def _execute_command_in_vm(v, command):
     return code and output of the command.
     '''
     # ignore the fact that this host is not in our known hosts
-    ssh_command = ['/usr/bin/ssh', '-o', 'UserKnownHostsFile=/dev/null']
-    ssh_command += ['-o', 'StrictHostKeyChecking=no']
-    if v.keyfile():
-        ssh_command += ['-i', '{}'.format(v.keyfile())]
-    ssh_command += ['-p', '{}'.format(v.port())]
-    ssh_command += ['{}@{}'.format(v.user(), v.hostname())]
-    ssh_command += ['{}'.format(command)]
+    ssh_command = [vagrant.VAGRANT_EXE, 'ssh', '-c', command]
     try:
         # print '_execute_command_in_vm', ssh_command
-        return 0, subprocess.check_output(ssh_command)
+        return 0, subprocess.check_output(ssh_command, cwd=v.root)
     except subprocess.CalledProcessError as e:
         return e.returncode, e.output
 

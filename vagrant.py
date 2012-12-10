@@ -33,6 +33,32 @@ import subprocess
 import sys
 
 
+def which(program):
+    '''
+    Emulate unix 'which' command.
+    http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python/377028#377028
+    '''
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+
+# The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
+VAGRANT_EXE = which('vagrant')
+
+
 class Vagrant(object):
     '''
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
