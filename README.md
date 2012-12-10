@@ -1,19 +1,3 @@
-## About this fork
-
-Changes in this fork:
-
-- Added auto download of official boxes in the init() 
-
-This fork introduces the following changes over the original:
-
-- Rewritten test suite allowing for easier addition of new features.
-- The init() method which initialized the VM based on the named base box.
-- The halt() method which stops the VM without destroying it.
-- Support for sandbox mode using the Sahara gem 
-  (https://github.com/jedi4ever/sahara).
-- Support for box-related commands - box_add(), box_list(), box_remove() methods. 
-- Support for provisioning - up() accepts no_provision and there is the provision()
-  method.
 
 ## Introduction
 
@@ -26,26 +10,36 @@ virtual machines (boxes).  This module is useful for:
 - Querying the status of a box (`status`).
 - Getting ssh configuration information useful for SSHing into the box. (`host`, `port`, ...)
 
+- Auto downloading of official boxes using init() .
+- Initializing the VM based on a named base box, using init().
+- Halting a VM without destroying it, using halt().
+- Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
+- Adding, Removing, and Listing boxes (`box add`, `box remove`, `box list`).
+- Provisioning - up() accepts no_provision and there is a provision() method.
+
 This package is _alpha_ and its API is not guaranteed to be stable.  The API
 attempts to be congruent with the `vagrant` API terminology, to facilitate
 knowledge transfer for users already familiar with Vagrant.
 
 I wanted python bindings for Vagrant so I could programmatically access my
-vagrant box using Fabric.  Why are you interested?
+vagrant box using Fabric.  Drop me a line to let me know how you use
+python-vagrant.
 
 
 ## Contribute
 
 If you use python and vagrant and this project does not do what you want,
-please open an issue or a pull request on github,
+please open an issue or a pull request on github at
 https://github.com/todddeluca/python-vagrant.
+
+Please see CHANGELOG.md for a detailed list of contributions and authors.
 
 
 ## Requirements
 
-- A working installation of Vagrant.
-- Vagrant requires VirtualBox.
-- Probably python 2.7 (since that is the only version it has been tested with.)
+- A working installation of Vagrant (e.g. Vagrant 1.0.5)
+- Vagrant requires VirtualBox (e.g. VirtualBox 4.2.4)
+- Probably Python 2.7 (since that is the only version it has been tested with.)
 
 
 ## Installation
@@ -55,7 +49,7 @@ https://github.com/todddeluca/python-vagrant.
 Clone and install python-vagrant
 
     cd ~
-    git clone git@github.com:kamilgrymuza/python-vagrant.git
+    git clone git@github.com:todddeluca/python-vagrant.git
     cd python-vagrant
     python setup.py install
 
@@ -79,3 +73,6 @@ current directory) and running a fabric task on it:
     env.key_filename = v.keyfile()
     env.disable_known_hosts = True # useful for when the vagrant box ip changes.
     execute(mytask) # run a fabric task on the vagrant host.
+
+
+

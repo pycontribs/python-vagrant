@@ -30,6 +30,7 @@ Dependencies:
 
 import os
 import subprocess
+import sys
 
 
 class Vagrant(object):
@@ -48,6 +49,7 @@ class Vagrant(object):
     RUNNING = 'running'  # vagrant up
     NOT_CREATED = 'not created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
+
     BASE_BOXES = {
         'ubuntu-Lucid32': 'http://files.vagrantup.com/lucid32.box',
         'ubuntu-lucid64': 'http://files.vagrantup.com/lucid64.box',
@@ -76,10 +78,10 @@ class Vagrant(object):
                         box_path = self.BASE_BOXES[box_name]
                     except KeyError:
                         print "Box not found in url list. Please specify the box path/url."
-                        exit()
+                        sys.exit(1)
                 self.box_add(box_name, box_path)
             else:
-                exit()
+                sys.exit(1)
         command = "init {}".format(box_name)
         self._call_vagrant_command(command)
         #self.conf() # cache configuration
@@ -253,51 +255,6 @@ class Vagrant(object):
         port_suffix = ':' + port if port else ''
         return user_prefix + self.hostname() + port_suffix
 
-    def sandbox_status(self):
-        '''
-        Returns the status of the sandbox mode.
-
-        Possible values are:
-        - on
-        - off
-        - unknown
-        - not installed
-        '''
-        command = "sandbox status"
-        vagrant_sandbox_output = self._vagrant_command_output(command)
-        return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
-
-    def sandbox_enable(self):
-        '''
-        Enables the sandbox mode.
-
-        This requires the Sahara gem to be installed
-        (https://github.com/jedi4ever/sahara).
-        '''
-        command = "sandbox on"
-        self._call_vagrant_command(command)
-
-    def sandbox_disable(self):
-        '''
-        Disables the sandbox mode.
-        '''
-        command = "sandbox off"
-        self._call_vagrant_command(command)
-
-    def sandbox_commit(self):
-        '''
-        Permanently writes all the changes made to the VM.
-        '''
-        command = "sandbox commit"
-        self._call_vagrant_command(command)
-
-    def sandbox_rollback(self):
-        '''
-        Reverts all the changes made to the VM since the last commit.
-        '''
-        command = "sandbox rollback"
-        self._call_vagrant_command(command)
-
     def box_add(self, box_name, box_url):
         '''
         Adds a box with given name, from given url.
@@ -326,25 +283,6 @@ class Vagrant(object):
         '''
         command = "provision"
         self._call_vagrant_command(command)
-
-    def _parse_vagrant_sandbox_status(self, vagrant_output):
-        '''
-        Returns the status of the sandbox mode given output from
-        'vagrant sandbox status'.
-        '''
-        # typical output
-        # [default] - snapshot mode is off
-        # or
-        # [default] - machine not created
-        # if the box VM is down
-        tokens = [token.strip() for token in vagrant_output.split(' ')]
-        if tokens[0] == 'Usage:':
-            sahara_status = 'not installed'
-        elif "{} {}".format(tokens[-2], tokens[-1]) == 'not created':
-            sahara_status = 'unknown'
-        else:
-            sahara_status = tokens[-1]
-        return sahara_status
 
     def _parse_config(self, ssh_config=None):
         '''
@@ -439,3 +377,74 @@ class Vagrant(object):
                 return True
             if ans == 'n' or ans == 'N':
                 return False
+
+
+class SandboxVagrant(Vagrant):
+    '''
+    Support for sandbox mode using the Sahara gem (https://github.com/jedi4ever/sahara).
+    '''
+
+    def sandbox_status(self):
+        '''
+        Returns the status of the sandbox mode.
+
+        Possible values are:
+        - on
+        - off
+        - unknown
+        - not installed
+        '''
+        command = "sandbox status"
+        vagrant_sandbox_output = self._vagrant_command_output(command)
+        return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
+
+    def sandbox_enable(self):
+        '''
+        Enables the sandbox mode.
+
+        This requires the Sahara gem to be installed
+        (https://github.com/jedi4ever/sahara).
+        '''
+        command = "sandbox on"
+        self._call_vagrant_command(command)
+
+    def sandbox_disable(self):
+        '''
+        Disables the sandbox mode.
+        '''
+        command = "sandbox off"
+        self._call_vagrant_command(command)
+
+    def sandbox_commit(self):
+        '''
+        Permanently writes all the changes made to the VM.
+        '''
+        command = "sandbox commit"
+        self._call_vagrant_command(command)
+
+    def sandbox_rollback(self):
+        '''
+        Reverts all the changes made to the VM since the last commit.
+        '''
+        command = "sandbox rollback"
+        self._call_vagrant_command(command)
+
+    def _parse_vagrant_sandbox_status(self, vagrant_output):
+        '''
+        Returns the status of the sandbox mode given output from
+        'vagrant sandbox status'.
+        '''
+        # typical output
+        # [default] - snapshot mode is off
+        # or
+        # [default] - machine not created
+        # if the box VM is down
+        tokens = [token.strip() for token in vagrant_output.split(' ')]
+        if tokens[0] == 'Usage:':
+            sahara_status = 'not installed'
+        elif "{} {}".format(tokens[-2], tokens[-1]) == 'not created':
+            sahara_status = 'unknown'
+        else:
+            sahara_status = tokens[-1]
+        return sahara_status
+

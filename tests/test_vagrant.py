@@ -4,11 +4,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from fabric.api import env, execute, task, run
-from fabric.state import connections
 from nose.tools import eq_
 
 import vagrant
+
+
+TEST_FILE_PATH = '/home/vagrant/python_vagrant_test_file'
+
 
 class VagrantTest(unittest.TestCase):
     '''
@@ -81,8 +83,7 @@ class VagrantTest(unittest.TestCase):
     
     def tearDown(self):
         '''
-        Destroys the VM after each test method finishes and closes fabric
-        connections.
+        Destroys the VM after each test method finishes.
         
         It is not an error if the VM has already been destroyed.
         '''
@@ -90,9 +91,11 @@ class VagrantTest(unittest.TestCase):
             subprocess.check_call(
                 'vagrant destroy -f'.format(self.TEST_BOX_NAME), 
                 cwd=self.td, shell=True)
-            os.unlink( os.path.join(self.td,"Vagrantfile"))
         except subprocess.CalledProcessError:
             pass
+        finally:
+            # remove Vagrantfile created by setUp() 'vagrant init' command.
+            os.unlink(os.path.join(self.td, "Vagrantfile"))
     
     def test_vm_status(self):
         '''
@@ -120,12 +123,12 @@ class VagrantTest(unittest.TestCase):
         '''
         Test methods controlling the VM - init(), up(), halt(), destroy().
         '''
-        os.unlink( os.path.join( self.td, 'Vagrantfile' ) )
+        os.unlink(os.path.join(self.td, 'Vagrantfile'))
 
         v = vagrant.Vagrant(self.td)
         #eq_(v.status(), v.NOT_CREATED)
             
-        v.init( self.TEST_BOX_NAME )
+        v.init(self.TEST_BOX_NAME)
         eq_(v.status(), v.NOT_CREATED)
             
         v.up()
@@ -186,82 +189,83 @@ class VagrantTest(unittest.TestCase):
         eq_(sahara_installed, True, "Sahara gem should be installed")
         
         if sahara_installed:
-            v = vagrant.Vagrant(self.td)
+            v = vagrant.SandboxVagrant(self.td)
             
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "unknown", 
                 "Before the VM goes up the status should be 'unknown', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
             v.up()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "off", 
                 "After the VM goes up the status should be 'off', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
             v.sandbox_enable()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "on", 
                 "After enabling the sandbox mode the status should be 'on', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
             v.sandbox_disable()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "off", 
                 "After disabling the sandbox mode the status should be 'off', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
             v.sandbox_enable()
             v.halt()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "on", 
                 "After halting the VM the status should be 'on', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
             v.up()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "on", 
                 "After bringing the VM up again the status should be 'on', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
-            self._close_fabric_connections()
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, None, "There should be no test file" )
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, None, "There should be no test file")
             
-            self._write_test_file( "foo" )
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
+            _write_test_file(v, "foo")
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, "foo", "The test file should read 'foo'")
             
-            self._close_fabric_connections()
             v.sandbox_rollback()            
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, None, "There should be no test file" )
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, None, "There should be no test file")
             
-            self._write_test_file( "foo" )
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
-            self._close_fabric_connections()
+            _write_test_file(v, "foo")
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, "foo", "The test file should read 'foo'")
             v.sandbox_commit()
-            self._write_test_file( "bar" )
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, "bar", "The test file should read 'bar'" )
+            _write_test_file(v, "bar")
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, "bar", "The test file should read 'bar'")
             
-            self._close_fabric_connections()
             v.sandbox_rollback()            
-            test_file_contents = self._test_file_contents()
-            eq_( test_file_contents, "foo", "The test file should read 'foo'" )
+            test_file_contents = _read_test_file(v)
+            print test_file_contents
+            eq_(test_file_contents, "foo", "The test file should read 'foo'")
             
-            sandbox_status = v._parse_vagrant_sandbox_status( "Usage: ..." )
+            sandbox_status = v._parse_vagrant_sandbox_status("Usage: ...")
             eq_(sandbox_status, "not installed", "When 'vagrant sandbox status'" +
                 " outputs vagrant help status should be 'not installed', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
             
-            self._close_fabric_connections()
             v.destroy()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "unknown", 
                 "After destroying the VM the status should be 'unknown', " +
-                "got:'{}'".format( sandbox_status ) )
+                "got:'{}'".format(sandbox_status))
 
     def test_boxes(self):
         '''
@@ -272,7 +276,7 @@ class VagrantTest(unittest.TestCase):
         
         boxes = self._boxes_list()
         if box_name in boxes:
-            v._call_vagrant_command( "box remove {}".format( box_name ) )
+            v._call_vagrant_command("box remove {}".format(box_name))
         
         boxes = self._boxes_list()
         eq_(box_name in boxes, False,
@@ -304,13 +308,13 @@ class VagrantTest(unittest.TestCase):
         self._add_provisioner_config(vagrant_file_path)
         
         v.up(True)
-        test_file_contents = self._test_file_contents()
-        eq_( test_file_contents, None, "There should be no test file after up()" )
+        test_file_contents = _read_test_file(v)
+        eq_(test_file_contents, None, "There should be no test file after up()")
         
         v.provision()
-        test_file_contents = self._test_file_contents()
-        print "Contents: {}".format( test_file_contents )
-        eq_( test_file_contents, "foo", "The test file should contain 'foo'" )
+        test_file_contents = _read_test_file(v)
+        print "Contents: {}".format(test_file_contents)
+        eq_(test_file_contents, "foo", "The test file should contain 'foo'")
     
     def _add_provisioner_config(self, vagrant_file_path):
         '''
@@ -318,9 +322,9 @@ class VagrantTest(unittest.TestCase):
         '''
         provisioner_configuration = '''
         Vagrant::Config.run do |config|
-          config.vm.provision :shell, :inline => "echo 'foo' > /home/vagrant/python_vagrant_test_file"
+          config.vm.provision :shell, :inline => "echo 'foo' > {}"
         end
-        '''
+        '''.format(TEST_FILE_PATH)
         with open(vagrant_file_path, 'r') as vagrantfile:
             vagrantfile_lines = vagrantfile.readlines()
         
@@ -328,15 +332,15 @@ class VagrantTest(unittest.TestCase):
         for line in vagrantfile_lines:
             if "end" in line and not "#" in line:
                 break
-            modified_lines.append( line )
+            modified_lines.append(line)
         
         for line in provisioner_configuration.splitlines():
             modified_lines.append(line)
         
-        modified_lines.append( "end" )
+        modified_lines.append("end")
         
         with open(vagrant_file_path, 'w') as vagrantfile:
-            vagrantfile.write( '\n'.join(modified_lines))
+            vagrantfile.write('\n'.join(modified_lines))
         
     def _boxes_list(self):
         '''
@@ -348,46 +352,40 @@ class VagrantTest(unittest.TestCase):
             v._vagrant_command_output(command).splitlines()]
         return boxes
         
-    def _close_fabric_connections(self):
-        '''
-        Closes all fabric connections to avoids "inactive" ssh connection errors.
-        '''
-        for key in connections.keys():
-            connections[key].close()
-            del connections[key]
+def _execute_command_in_vm(v, command):
+    '''
+    Run command via ssh on the test vagrant box.  Returns a tuple of the
+    return code and output of the command.
+    '''
+    # ignore the fact that this host is not in our known hosts
+    ssh_command = ['/usr/bin/ssh', '-o', 'UserKnownHostsFile=/dev/null']
+    ssh_command += ['-o', 'StrictHostKeyChecking=no']
+    if v.keyfile():
+        ssh_command += ['-i', '{}'.format(v.keyfile())]
+    ssh_command += ['-p', '{}'.format(v.port())]
+    ssh_command += ['{}@{}'.format(v.user(), v.hostname())]
+    ssh_command += ['{}'.format(command)]
+    try:
+        # print '_execute_command_in_vm', ssh_command
+        return 0, subprocess.check_output(ssh_command)
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.output
 
-    def _execute_task_in_vm(self, task, *args, **kwargs):
-        '''
-        Executes the task on the VM and returns the output.
-        '''
-        v = vagrant.Vagrant(self.td)
-        env.hosts = [v.user_hostname_port()]
-        env.key_filename = v.keyfile()
-        env.warn_only = True
-        env.disable_known_hosts = True #useful for when the vagrant box ip changes.
-        return execute(task, *args, **kwargs)
-    
-    def _write_test_file(self, file_contents):
-        '''
-        Writes given contents to the test file.
-        '''
-        @task
-        def write_file_contents(file_contents):
-            return run('echo "{}" > /home/vagrant/python_vagrant_test_file'.format(
-                file_contents))
-        contents = self._execute_task_in_vm(write_file_contents, file_contents)
-    
-    def _test_file_contents(self):
-        '''
-        Returns the contents of the test file stored in the VM or None if there
-        is no file.
-        '''    
-        @task
-        def read_file_contents():
-            return run('cat /home/vagrant/python_vagrant_test_file')
-        
-        contents = self._execute_task_in_vm(read_file_contents).values()[ 0 ]
-        if "No such file or directory" in contents:
-            contents = None
-        return contents
-        
+def _write_test_file(v, file_contents):
+    '''
+    Writes given contents to the test file.
+    '''
+    command = "echo '{}' > {}".format(file_contents, TEST_FILE_PATH)
+
+def _read_test_file(v):
+    '''
+    Returns the contents of the test file stored in the VM or None if there
+    is no file.
+    '''
+    command = 'cat {}'.format(TEST_FILE_PATH)
+    returncode, contents = _execute_command_in_vm(v, command)
+    if returncode != 0:
+        return None
+    else:
+        return contents.strip()
+

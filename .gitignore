@@ -2,3 +2,7 @@
 .coverage
 .project
 .pydevproject
+
+.vagrant
+Vagrantfile
+
