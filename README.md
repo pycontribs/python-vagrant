@@ -1,18 +1,19 @@
 
 ## Introduction
 
-Python-vagrant is a python module that provdes a thin wrapper around the
+Python-vagrant is a python module that provides a _thin_ wrapper around the
 `vagrant` command line executable, allowing programmatic control of Vagrant
 virtual machines (boxes).  This module is useful for:
 
 - Starting a Vagrant box (`up`).
 - Terminating a Vagrant box (`destroy`).
+- Halting a Vagrant box without destroying it (`halt`).
 - Querying the status of a box (`status`).
 - Getting ssh configuration information useful for SSHing into the box. (`host`, `port`, ...)
-
+- Running `vagrant` commands in a multi-VM environment
+  (http://vagrantup.com/v1/docs/multivm.html) by using `vm_name` parameter.
 - Auto downloading of official boxes using init() .
 - Initializing the VM based on a named base box, using init().
-- Halting a VM without destroying it, using halt().
 - Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 - Adding, Removing, and Listing boxes (`box add`, `box remove`, `box list`).
 - Provisioning - up() accepts no_provision and there is a provision() method.
@@ -39,12 +40,20 @@ Please see CHANGELOG.md for a detailed list of contributions and authors.
 
 - A working installation of Vagrant (e.g. Vagrant 1.0.5)
 - Vagrant requires VirtualBox (e.g. VirtualBox 4.2.4)
-- Probably Python 2.7 (since that is the only version it has been tested with.)
+- Python 2.7 (since that is the only version it has been tested with.)
+- The Sahara gem for Vagrant is optional.  It will allow you to use
+  `SandboxVagrant`.
 
 
 ## Installation
 
-### Install from github.com (this fork)
+### Install from pypi.python.org
+
+Download and install python-vagrant:
+
+    pip install python-vagrant
+
+### Install from github.com
 
 Clone and install python-vagrant
 

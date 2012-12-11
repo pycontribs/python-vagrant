@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'python-vagrant',
-    version = '0.1.0',
+    version = '0.2.0',
     license = 'MIT',
     description = 'Python bindings for interacting with Vagrant virtual machines.',
     long_description = open(os.path.join(os.path.dirname(__file__), 

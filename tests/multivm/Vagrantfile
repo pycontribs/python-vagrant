@@ -1,0 +1,16 @@
+
+# http://vagrantup.com/v1/docs/multivm.html
+
+Vagrant::Config.run do |config|
+  config.vm.define :web do |web_config|
+    web_config.vm.box = "python-vagrant-base"
+    web_config.vm.forward_port 80, 8080
+  end
+
+  config.vm.define :db do |db_config|
+    db_config.vm.box = "python-vagrant-base"
+    db_config.vm.forward_port 3306, 3306
+  end
+end
+
+

@@ -4,12 +4,55 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from nose.tools import eq_
+from nose.tools import eq_, with_setup
 
 import vagrant
 
 
 TEST_FILE_PATH = '/home/vagrant/python_vagrant_test_file'
+MULTIVM_VAGRANTFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                   'multivm', 'Vagrantfile')
+# the names of the vms from the Vagrantfile.
+VM_1 = 'web'
+VM_2 = 'db'
+# name of the base box used for testing
+TEST_BOX_NAME = "python-vagrant-base"
+# url of the box file used for testing
+TEST_BOX_URL = "http://files.vagrantup.com/lucid32.box"
+# temp dir for testing.
+TD = None
+
+def setup():
+    '''
+    Creates the directory used for testing and sets up the base box if not 
+    already set up.
+
+    Creates a directory in a temporary location and checks if there is a base
+    box under the `TEST_BOX_NAME`. If not, downloads it from `TEST_BOX_URL` and
+    adds to Vagrant.
+
+    This is ran once before the first test (global setup).
+    '''
+    sys.stderr.write('module setup()\n')
+    global TD
+    TD = tempfile.mkdtemp()
+    boxes = subprocess.check_output(
+        'vagrant box list', cwd=TD, shell=True)
+
+    if TEST_BOX_NAME not in [line.strip() for line in boxes.splitlines()]:
+        add_command = ('vagrant box add {} {}'.format(
+            TEST_BOX_NAME, TEST_BOX_URL))
+        subprocess.check_call(add_command, cwd=TD, shell=True)
+
+def teardown():
+    '''
+    Removes the directory created in setup.
+
+    This is ran once after the last test.
+    '''
+    sys.stderr.write('module teardown()\n')
+    if TD is not None:
+        shutil.rmtree(TD)
 
 
 class VagrantTest(unittest.TestCase):
@@ -34,52 +77,15 @@ class VagrantTest(unittest.TestCase):
     Before the first test a base box is added to Vagrant under the name 
     TEST_BOX_NAME. This box is not deleted after the test suite runs in order 
     to avoid multiple downloads of the same box file on every run.
-    ''' 
+    '''
 
-    # name of the base box used for testing
-    TEST_BOX_NAME = "python-vagrant-base"
-    
-    # url of the box file used for testing
-    TEST_BOX_URL = "http://files.vagrantup.com/lucid32.box"
-    
-    @classmethod
-    def setupAll(cls):
-        '''
-        Creates the directory used for testing and sets up the base box if not 
-        already set up.
-        
-        Creates a directory in a temporary location and checks if there is 
-        a base box under the `TEST_BOX_NAME`. If not, downloads it from 
-        `TEST_BOX_URL` and adds to Vagrant.
-         
-        This is ran once before the first test (global setup).
-        '''
-        cls.td = tempfile.mkdtemp()
-        boxes = subprocess.check_output(
-            'vagrant box list', cwd=cls.td, shell=True)
-        
-        if cls.TEST_BOX_NAME not in \
-            [line.strip() for line in boxes.splitlines()]:
-            add_command = ('vagrant box add {} {}'.format(
-                cls.TEST_BOX_NAME,cls.TEST_BOX_URL))
-            subprocess.check_call(add_command, cwd=cls.td, shell=True)
-    
-    @classmethod
-    def teardownAll(cls):
-        '''
-        Removes the directory created in `meth:setupAll`.
-        
-        This is ran once after the last test.
-        '''
-        shutil.rmtree(cls.td)
-        
     def setUp(self):
         '''
         Initializes the VM before each test method (test_foo()).
         '''
         subprocess.check_call(
-            'vagrant init "{}"'.format(self.TEST_BOX_NAME), 
-            cwd=self.td, shell=True)
+            'vagrant init "{}"'.format(TEST_BOX_NAME), 
+            cwd=TD, shell=True)
     
     def tearDown(self):
         '''
@@ -89,33 +95,33 @@ class VagrantTest(unittest.TestCase):
         '''
         try:
             subprocess.check_call(
-                'vagrant destroy -f'.format(self.TEST_BOX_NAME), 
-                cwd=self.td, shell=True)
+                'vagrant destroy -f'.format(TEST_BOX_NAME), 
+                cwd=TD, shell=True)
         except subprocess.CalledProcessError:
             pass
         finally:
             # remove Vagrantfile created by setUp() 'vagrant init' command.
-            os.unlink(os.path.join(self.td, "Vagrantfile"))
+            os.unlink(os.path.join(TD, "Vagrantfile"))
     
     def test_vm_status(self):
         '''
         Test whether vagrant.status() correctly reports state of the VM.
         '''
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         eq_(v.status(), v.NOT_CREATED, 
             "Before going up status should be vagrant.NOT_CREATED")
         command = 'vagrant up'
-        subprocess.check_call(command, cwd=self.td, shell=True)
+        subprocess.check_call(command, cwd=TD, shell=True)
         eq_(v.status(), v.RUNNING, 
             "After going up status should be vagrant.RUNNING")
         
         command = 'vagrant halt'
-        subprocess.check_call(command, cwd=self.td, shell=True)
+        subprocess.check_call(command, cwd=TD, shell=True)
         eq_(v.status(), v.POWEROFF, 
             "After halting status should be vagrant.POWEROFF")
     
         command = 'vagrant destroy -f'
-        subprocess.check_call(command, cwd=self.td, shell=True)
+        subprocess.check_call(command, cwd=TD, shell=True)
         eq_(v.status(), v.NOT_CREATED, 
             "After destroying status should be vagrant.NOT_CREATED")
         
@@ -123,12 +129,12 @@ class VagrantTest(unittest.TestCase):
         '''
         Test methods controlling the VM - init(), up(), halt(), destroy().
         '''
-        os.unlink(os.path.join(self.td, 'Vagrantfile'))
+        os.unlink(os.path.join(TD, 'Vagrantfile'))
 
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         #eq_(v.status(), v.NOT_CREATED)
             
-        v.init(self.TEST_BOX_NAME)
+        v.init(TEST_BOX_NAME)
         eq_(v.status(), v.NOT_CREATED)
             
         v.up()
@@ -144,25 +150,24 @@ class VagrantTest(unittest.TestCase):
         '''
         Test methods retrieving configuration settings.
         '''
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         v.up()
         command = "vagrant ssh-config"
-        ssh_config = subprocess.check_output(command, cwd=self.td, shell=True)
-        parsed_config = dict(
-            line.strip().split(None, 1) for line in 
-                ssh_config.splitlines() if line.strip() and not \
-                    line.strip().startswith('#'))
+        ssh_config = subprocess.check_output(command, cwd=TD, shell=True)
+        parsed_config = dict(line.strip().split(None, 1) for line in
+                             ssh_config.splitlines() if line.strip() and not
+                             line.strip().startswith('#'))
         
         user = v.user()
-        expected_user = parsed_config[ "User" ] 
+        expected_user = parsed_config["User"] 
         eq_(user, expected_user)
         
         hostname = v.hostname()
-        expected_hostname = parsed_config[ "HostName" ] 
+        expected_hostname = parsed_config["HostName"]
         eq_(hostname, expected_hostname)
         
         port = v.port()
-        expected_port = parsed_config[ "Port" ] 
+        expected_port = parsed_config["Port"]
         eq_(port, expected_port)
         
         user_hostname = v.user_hostname()
@@ -173,7 +178,7 @@ class VagrantTest(unittest.TestCase):
             "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
         
         keyfile = v.keyfile()
-        eq_(keyfile, parsed_config[ "IdentityFile" ])
+        eq_(keyfile, parsed_config["IdentityFile"])
 
     def test_vm_sandbox_mode(self):
         '''
@@ -184,12 +189,12 @@ class VagrantTest(unittest.TestCase):
         '''
         command = "vagrant sandbox status"
         output = subprocess.check_output(
-                command, cwd=self.td, shell=True)
+                command, cwd=TD, shell=True)
         sahara_installed = True if not "Usage" in output else False
         eq_(sahara_installed, True, "Sahara gem should be installed")
         
         if sahara_installed:
-            v = vagrant.SandboxVagrant(self.td)
+            v = vagrant.SandboxVagrant(TD)
             
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "unknown", 
@@ -202,19 +207,19 @@ class VagrantTest(unittest.TestCase):
                 "After the VM goes up the status should be 'off', " +
                 "got:'{}'".format(sandbox_status))
             
-            v.sandbox_enable()
+            v.sandbox_on()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "on", 
                 "After enabling the sandbox mode the status should be 'on', " +
                 "got:'{}'".format(sandbox_status))
             
-            v.sandbox_disable()
+            v.sandbox_off()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "off", 
                 "After disabling the sandbox mode the status should be 'off', " +
                 "got:'{}'".format(sandbox_status))
             
-            v.sandbox_enable()
+            v.sandbox_on()
             v.halt()
             sandbox_status = v.sandbox_status()
             eq_(sandbox_status, "on", 
@@ -271,7 +276,7 @@ class VagrantTest(unittest.TestCase):
         '''
         Test methods for manipulating boxes - adding, listing, removing.
         '''
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         box_name = "python-vagrant-dummy-box"
         
         boxes = self._boxes_list()
@@ -302,12 +307,12 @@ class VagrantTest(unittest.TestCase):
         '''
         Test provisioning support.
         '''
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         
-        vagrant_file_path = os.path.join(self.td, "Vagrantfile")
+        vagrant_file_path = os.path.join(TD, "Vagrantfile")
         self._add_provisioner_config(vagrant_file_path)
         
-        v.up(True)
+        v.up(no_provision=True)
         test_file_contents = _read_test_file(v)
         eq_(test_file_contents, None, "There should be no test file after up()")
         
@@ -346,12 +351,97 @@ class VagrantTest(unittest.TestCase):
         '''
         Returns a list of available box names.
         '''
-        v = vagrant.Vagrant(self.td)
+        v = vagrant.Vagrant(TD)
         command = 'box list'
-        boxes = [line.strip() for line in \
-            v._vagrant_command_output(command).splitlines()]
+        boxes = [line.strip() for line in
+                 subprocess.check_output([vagrant.VAGRANT_EXE, 'box', 'list'],
+                                         cwd=v.root).splitlines()]
         return boxes
-        
+
+
+def setup_multivm():
+    shutil.copy(MULTIVM_VAGRANTFILE, TD)
+
+
+def teardown_multivm():
+    try:
+        # Try to destroy any vagrant box that might be running.
+        subprocess.check_call('vagrant destroy -f',
+                              cwd=TD, shell=True)
+    except subprocess.CalledProcessError:
+        pass
+    finally:
+        # remove Vagrantfile created by setup.
+        os.unlink(os.path.join(TD, "Vagrantfile"))
+
+
+@with_setup(setup_multivm, teardown_multivm)
+def test_multivm_lifecycle():
+    v = vagrant.Vagrant(TD)
+
+    # test getting multiple statuses at once
+    statuses = v.status()
+    eq_(statuses[VM_1], v.NOT_CREATED)
+    eq_(statuses[VM_2], v.NOT_CREATED)
+
+    v.up(vm_name=VM_1)
+    eq_(v.status(vm_name=VM_1), v.RUNNING)
+    eq_(v.status(vm_name=VM_2), v.NOT_CREATED)
+
+    # start both vms
+    v.up()
+    eq_(v.status(vm_name=VM_1), v.RUNNING)
+    eq_(v.status(vm_name=VM_2), v.RUNNING)
+
+    v.halt(vm_name=VM_1)
+    eq_(v.status(vm_name=VM_1), v.POWEROFF)
+    eq_(v.status(vm_name=VM_2), v.RUNNING)
+
+    v.destroy(vm_name=VM_1)
+    eq_(v.status(vm_name=VM_1), v.NOT_CREATED)
+    eq_(v.status(vm_name=VM_2), v.RUNNING)
+
+    v.destroy(vm_name=VM_2)
+    eq_(v.status(vm_name=VM_1), v.NOT_CREATED)
+    eq_(v.status(vm_name=VM_2), v.NOT_CREATED)
+
+
+@with_setup(setup_multivm, teardown_multivm)
+def test_multivm_config():
+    '''
+    Test methods retrieving configuration settings.
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up(vm_name=VM_1)
+    command = "vagrant ssh-config " + VM_1
+    ssh_config = subprocess.check_output(command, cwd=TD, shell=True)
+    parsed_config = dict(line.strip().split(None, 1) for line in
+                            ssh_config.splitlines() if line.strip() and not
+                            line.strip().startswith('#'))
+
+    user = v.user(vm_name=VM_1)
+    expected_user = parsed_config["User"] 
+    eq_(user, expected_user)
+
+    hostname = v.hostname(vm_name=VM_1)
+    expected_hostname = parsed_config["HostName"]
+    eq_(hostname, expected_hostname)
+
+    port = v.port(vm_name=VM_1)
+    expected_port = parsed_config["Port"]
+    eq_(port, expected_port)
+
+    user_hostname = v.user_hostname(vm_name=VM_1)
+    eq_(user_hostname, "{}@{}".format(expected_user, expected_hostname))
+
+    user_hostname_port = v.user_hostname_port(vm_name=VM_1)
+    eq_(user_hostname_port,
+        "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
+
+    keyfile = v.keyfile(vm_name=VM_1)
+    eq_(keyfile, parsed_config["IdentityFile"])
+
+
 def _execute_command_in_vm(v, command):
     '''
     Run command via ssh on the test vagrant box.  Returns a tuple of the
@@ -359,17 +449,16 @@ def _execute_command_in_vm(v, command):
     '''
     # ignore the fact that this host is not in our known hosts
     ssh_command = [vagrant.VAGRANT_EXE, 'ssh', '-c', command]
-    try:
-        # print '_execute_command_in_vm', ssh_command
-        return 0, subprocess.check_output(ssh_command, cwd=v.root)
-    except subprocess.CalledProcessError as e:
-        return e.returncode, e.output
+    return subprocess.check_output(ssh_command, cwd=v.root)
+
 
 def _write_test_file(v, file_contents):
     '''
     Writes given contents to the test file.
     '''
     command = "echo '{}' > {}".format(file_contents, TEST_FILE_PATH)
+    _execute_command_in_vm(v, command)
+
 
 def _read_test_file(v):
     '''
@@ -377,9 +466,10 @@ def _read_test_file(v):
     is no file.
     '''
     command = 'cat {}'.format(TEST_FILE_PATH)
-    returncode, contents = _execute_command_in_vm(v, command)
-    if returncode != 0:
+    try:
+        output = _execute_command_in_vm(v, command)
+        return output.strip()
+    except subprocess.CalledProcessError:
         return None
-    else:
-        return contents.strip()
+
 

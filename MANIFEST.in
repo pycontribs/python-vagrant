@@ -1,1 +1,2 @@
-include *.markdown *.md *.txt
+include *.md *.txt
+recursive-include tests *.py Vagrantfile
