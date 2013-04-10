@@ -29,6 +29,7 @@ Dependencies:
 '''
 
 import os
+import re
 import subprocess
 import sys
 
@@ -172,12 +173,15 @@ class Vagrant(object):
         output = self._run_vagrant_command('status', vm_name)
         # sys.stderr.write('status {}: {}\n'.format(vm_name, output))
         statuses = {}
-        state = 1 # parsing state variable.
-        # The format of output is expected to be a "Current VM states:" line
+        # The format of output is expected to be a 
+        #   - "Current VM states:" line (vagrant 1)
+        #   - "Current machine states" line (vagrant 1.1)
         # followed by a blank line, followed by one or more status lines,
         # followed by a blank line.
+        state = 1
         for line in output.splitlines():
-            if state == 1 and line.strip().startswith('Current VM states:'):
+
+            if state == 1 and re.search('^Current (VM|machine) states:', line.strip()):
                 state = 2
             elif state == 2 and not line.strip():
                 state = 3
