@@ -386,7 +386,7 @@ class Vagrant(object):
             r'\s*(UserKnownHostsFile\s+(?P<UserKnownHostsFile>.*))\n' +
             r'\s*(StrictHostKeyChecking\s+(?P<StrictHostKeyChecking>.*))\n' +
             r'\s*(PasswordAuthentication\s+(?P<PasswordAuthentication>.*))\n' +
-            r'\s*(IdentityFile\s+(?P<IdentityFile>.*))\n' +
+            r'\s*(IdentityFile\s+\"(?P<IdentityFile>.*)\")\n' +
             r'\s*(IdentitiesOnly\s+(?P<IdentitiesOnly>.*))\n' +
             r'\s*(LogLevel\s+(?P<LogLevel>.*))\n',
             ssh_config,
