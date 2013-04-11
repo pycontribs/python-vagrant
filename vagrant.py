@@ -72,6 +72,7 @@ class Vagrant(object):
     RUNNING = 'running'  # vagrant up
     NOT_CREATED = 'not created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
+    ABORTED = 'aborted'  # The VM is in an aborted state
 
     BASE_BOXES = {
         'ubuntu-Lucid32': 'http://files.vagrantup.com/lucid32.box',
