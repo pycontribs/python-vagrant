@@ -188,7 +188,7 @@ class Vagrant(object):
                 state = 3
             elif state == 3 and line.strip():
                 this_vm_name, status = line.strip().split(None, 1)
-                statuses[this_vm_name] = status
+                statuses[this_vm_name] = status.split('(')[0].strip()
             elif state == 3 and not line.strip():
                 break
 
