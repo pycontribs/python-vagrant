@@ -3,6 +3,9 @@ Python bindings for working with Vagrant and Vagrantfiles.  Do useful things
 with the `vagrant` CLI without the boilerplate (and errors) of calling
 `vagrant` and parsing the results.
 
+The API attempts to conform closely to the API of the `vagrant` command line,
+including method names and parameter names.
+
 Quick and dirty test to up, look at, and destroy (!) a Vagrant box.  Run from
 the directory holding your Vagrantfile.
 
@@ -31,7 +34,6 @@ Dependencies:
 import os
 import re
 import subprocess
-import sys
 
 
 def which(program):
@@ -73,6 +75,8 @@ class Vagrant(object):
     NOT_CREATED = 'not created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
     ABORTED = 'aborted'  # The VM is in an aborted state
+    SAVED = 'saved' # vagrant suspend
+    STATUSES = (RUNNING, NOT_CREATED, POWEROFF, ABORTED, SAVED)
 
     BASE_BOXES = {
         'ubuntu-Lucid32': 'http://files.vagrantup.com/lucid32.box',
@@ -91,23 +95,21 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
 
-    def init(self, box_name, box_path=None):
+    def init(self, box_name=None, box_url=None):
         '''
-        Init the VM.
+        From the Vagrant docs:
+
+        This initializes the current directory to be a Vagrant environment by
+        creating an initial Vagrantfile if one doesn't already exist.
+
+        If box_name is given, it will prepopulate the config.vm.box setting in
+        the created Vagrantfile.
+        If box_url is given, it will prepopulate the config.vm.box_url setting
+        in the created Vagrantfile.
+
+        Note: if box_url is given, box_name should also be given.
         '''
-        print "Checking for " + box_name
-        if box_name not in self.box_list():
-            if self._confirm(box_name + " not installed. Add box?"):
-                if box_path is None:
-                    try:
-                        box_path = self.BASE_BOXES[box_name]
-                    except KeyError:
-                        print "Box not found in url list. Please specify the box path/url."
-                        sys.exit(1)
-                self.box_add(box_name, box_path)
-            else:
-                sys.exit(1)
-        self._run_vagrant_command('init', box_name)
+        self._run_vagrant_command('init', box_name, box_url)
 
     def up(self, no_provision=False, vm_name=None):
         '''
@@ -117,37 +119,54 @@ class Vagrant(object):
         self._run_vagrant_command('up', vm_name, no_provision_arg)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # in multi-VM environments, up() can be used to start all VMs,
             # however vm_name is required for conf() or ssh_config().
             pass
 
-    def halt(self, vm_name=None):
+    def suspend(self, vm_name=None):
+        '''
+        Suspend/save the machine.
+        '''
+        self._run_vagrant_command('suspend', vm_name)
+        self._cached_conf[vm_name] = None  # remove cached configuration
+
+    def halt(self, vm_name=None, force=False):
         '''
         Halt the Vagrant box.
+
+        force: If True, force shut down.
         '''
-        self._run_vagrant_command('halt', vm_name)
+        force_opt = '--force' if force else None
+        self._run_vagrant_command('halt', vm_name, force_opt)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def destroy(self, vm_name=None):
         '''
         Terminate the running Vagrant box.
         '''
-        self._run_vagrant_command('destroy', vm_name, '-f')
+        self._run_vagrant_command('destroy', vm_name, '--force')
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def status(self, vm_name=None):
         '''
         Returns the status of a Vagrant box or a dictionary mapping vm names
-        to statuses.
+        to statuses.  Statuses are RUNNING, POWEROFF, SAVED and NOT_CREATED,
+        corresponding to vagrant up, halt, suspend, and destroy, respectively.
         
         In a single-VM environment or when the vm_name parameter is used in
         a multi-VM environment, a status string is returned:
 
-        - 'not created' if the box is destroyed
-        - 'running' if the box is up
-        - 'poweroff' if the box is halted
+        - 'not created' if the vm is destroyed
+        - 'running' if the vm is up
+        - 'poweroff' if the vm is halted
+        - 'saved' if the vm is suspended
+        - 'aborted' if the vm is aborted
         - None if no status is found
+
+        As of Vagrant 1.1.0, vagrant has started supporting providers (like
+        virtualbox and vmware_fusion) and has started adding the provider in
+        the status string, like 'not created (virtualbox)'.
 
         There might be other statuses, but the Vagrant docs were unclear.
 
@@ -171,24 +190,36 @@ class Vagrant(object):
         # above with their current state. For more information about a specific
         # VM, run `vagrant status NAME`.
 
+        # Example status lines, showing the vm name, status, and provider.
+        # default                  not created (virtualbox)
+        # default                  saved (virtualbox)
+        # default                  running (virtualbox)
+        # default                  poweroff (virtualbox)
+
         output = self._run_vagrant_command('status', vm_name)
-        # sys.stderr.write('status {}: {}\n'.format(vm_name, output))
-        statuses = {}
         # The format of output is expected to be a 
         #   - "Current VM states:" line (vagrant 1)
         #   - "Current machine states" line (vagrant 1.1)
         # followed by a blank line, followed by one or more status lines,
         # followed by a blank line.
-        state = 1
+        statuses = {}
+        state = 1 # looking for for the 'Current ... states' line
         for line in output.splitlines():
 
             if state == 1 and re.search('^Current (VM|machine) states:', line.strip()):
-                state = 2
+                state = 2 # looking for the blank line
             elif state == 2 and not line.strip():
-                state = 3
+                state = 3 # looking for machine status lines
             elif state == 3 and line.strip():
-                this_vm_name, status = line.strip().split(None, 1)
-                statuses[this_vm_name] = status
+                vm_name_and_status, provider = self._parse_provider_line(line)
+                # Split vm_name from status.  Only works for recognized statuses.
+                m = re.search(r'^(?P<vm_name>.*?)\s+(?P<status>' +
+                              '|'.join(self.STATUSES) + ')$',
+                              vm_name_and_status)
+                if not m:
+                    raise Exception('ParseError: Failed to properly parse vm name and status from line.', line, output)
+                else:
+                    statuses[m.group('vm_name')] = m.group('status')
             elif state == 3 and not line.strip():
                 break
 
@@ -330,24 +361,49 @@ class Vagrant(object):
         port_suffix = ':' + port if port else ''
         return user_prefix + self.hostname(vm_name=vm_name) + port_suffix
 
-    def box_add(self, box_name, box_url):
+    def box_add(self, name, url, provider=None, force=False):
         '''
         Adds a box with given name, from given url.
+
+        force: If True, overwrite an existing box if it exists.
         '''
-        self._run_vagrant_command('box', 'add', box_name, box_url)
+        force_opt = '--force' if force else None
+        cmd = ['box', 'add', name, url, force_opt]
+        if provider is not None:
+            cmd += ['--provider', provider]
+
+        self._run_vagrant_command(*cmd)
 
     def box_list(self):
         '''
-        Returns a list of all available box names.
+        Returns a list of all available box names.  For example:
+
+            ['precise32', 'precise64']
+        '''
+        return [name for name, provider in self.box_list_long()]
+
+    def box_list_long(self):
+        '''
+        Returns a list of all available boxes as tuples containing the box
+        name and provider.  For example:
+
+            [('precise32', 'virtualbox'), ('precise64', 'virtualbox')]
+
+        As of Vagrant >= 1.1, boxes are listed with names and providers.
         '''
         output = self._run_vagrant_command('box', 'list')
-        return [line.strip() for line in output.splitlines()]
+        boxes = []
+        for line in output.splitlines():
+            name, provider = self._parse_provider_line(line)
+            boxes.append((name, provider))
+        return boxes
 
-    def box_remove(self, box_name):
+    def box_remove(self, name, provider):
         '''
-        Removes the box with given name.
+        Removes the box matching name and provider. It is an error if no box
+        matches name and provider.
         '''
-        self._run_vagrant_command('box', 'remove', box_name)
+        self._run_vagrant_command('box', 'remove', name, provider)
 
     def provision(self, vm_name=None):
         '''
@@ -355,23 +411,54 @@ class Vagrant(object):
         '''
         self._run_vagrant_command('provision', vm_name)
 
+    def _parse_provider_line(self, line):
+        '''
+        In vagrant 1.1+, `vagrant box list` produces lines like:
+
+            precise32                (virtualbox)
+
+        And `vagrant status` produces lines like:
+
+            default                  not created (virtualbox)
+
+        Pre-1.1 version of vagrant produce lines without a provider
+        in parentheses.  This helper function separates the beginning of the
+        line from the provider at the end of the line.  It assumes that the
+        provider is surrounded by parentheses (and contains no parentheses.
+        It returns the beginning of the line (trimmed of whitespace) and
+        the provider (or None if the line has no provider).
+
+        Example outputs:
+
+            ('precise32', 'virtualbox')
+            ('default                  not created', 'virtualbox')
+        '''
+        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[^)]+)\)\s*$',
+                          line)
+        if m:
+            return m.group('value'), m.group('provider')
+        else:
+            return line.strip(), None
+
     def _parse_config(self, ssh_config):
         '''
-        This ghetto parser does not parse the full grammar of an ssh config
+        This lame parser does not parse the full grammar of an ssh config
         file.  It makes assumptions that are (hopefully) correct for the output
         of `vagrant ssh-config [vm-name]`.  Specifically it assumes that there
         is only one Host section, the default vagrant host.  It assumes that
         the parameters of the ssh config are not changing.
         every line is of the form 'key  value', where key is a single token
         without any whitespace and value is the remaining part of the line.
-        All leading and trailing whitespace is removed from key and value.  For
-        example:
+        Value may optionally be surrounded in double quotes.  All leading and
+        trailing whitespace is removed from key and value.  Example lines:
 
         '    User vagrant\n'
+        '    IdentityFile "/home/robert/.vagrant.d/insecure_private_key"\n'
 
         Lines with '#' as the first non-whitespace character are considered
         comments and ignored.  Whitespace-only lines are ignored.  This parser
-        does NOT handle using an '=' in options.
+        does NOT handle using an '=' in options.  Values surrounded in double
+        quotes will have the double quotes removed.
 
         See https://github.com/bitprophet/ssh/blob/master/ssh/config.py for a
         more compliant ssh config file parser.

@@ -5,6 +5,34 @@ This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
 
+## 0.3.0 (released 2013/04/11)
+
+- Add new vm state: ABORTED
+  Author: Robert Strind (https://github.com/stribert)
+- Add new vm state: SAVED
+  Author: Todd DeLuca (https://github.com/todddeluca)
+- Fix parsing of vagrant 1.1 status messages.
+  Author: Vincent Viallet (https://github.com/zbal)
+- Add new lifecycle method, suspend(), corresponding to `vagrant suspend`.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+
+Backwards-incompatible changes:
+
+- Removed redundant `box_` prefix from `box_name` and `box_url` parameters
+  in `box_add` and `box_remove` methods.  This aligns these parameter names
+  with the parameter names in the corresponding vagrant CLI commands.
+  Author: Todd DeLuca (https://github.com/todddeluca).
+- Added required parameter `provider` to `box_remove` method.  This is
+  consistent with the backwards-incompatible change in the underlying
+  `vagrant box remove` command.
+  Author: Todd DeLuca (https://github.com/todddeluca).
+- Method `init`, corresponding to `vagrant init`, has been changed to more
+  closely reflect `vagrant init`.  The parameter `box_path` has been changed
+  to `box_url`.  The method no longer attempts to interactively add a box if
+  it has not already been added.
+  Author: Todd DeLuca (https://github.com/todddeluca).
+
+
 ## 0.2.0 (released 2012/12/09)
 
 This release incorporates numerous changes from a couple of forks on github, 
