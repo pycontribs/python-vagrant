@@ -382,11 +382,9 @@ class Vagrant(object):
                 started_parsing = True
             if not started_parsing or not line.strip() or line.strip().startswith('#'):
                 continue
-            keyval = line.strip().split(None, 1)
-            conf[keyval[0]] = keyval[1]
-        # Cleanup double quotes for IdentityFile
-        if conf['IdentityFile']:
-            conf['IdentityFile'] = conf['IdentityFile'].strip('"')
+            key, value = line.strip().split(None, 1)
+            # Remove leading and trailing " from the values
+            conf[key] = value.strip('"')
         return conf
 
     def _run_vagrant_command(self, *args):
