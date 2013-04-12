@@ -1,10 +1,19 @@
 
 import os
+import re
 from setuptools import setup, find_packages
+
+# parse version from package/module without importing or evaluating the code
+with open('vagrant.py') as fh:
+    for line in fh:
+        m = re.search(r"^__version__ = '(?P<version>[^']+)'$", line)
+        if m:
+            version = m.group('version')
+            break
 
 setup(
     name = 'python-vagrant',
-    version = '0.2.0',
+    version = version,
     license = 'MIT',
     description = 'Python bindings for interacting with Vagrant virtual machines.',
     long_description = open(os.path.join(os.path.dirname(__file__), 

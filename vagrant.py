@@ -36,6 +36,10 @@ import re
 import subprocess
 
 
+# python package version
+__version__ = '0.2.0'
+
+
 def which(program):
     '''
     Emulate unix 'which' command.
