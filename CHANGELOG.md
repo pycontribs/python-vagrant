@@ -5,7 +5,12 @@ This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
 
-## 0.3.0 (released 2013/04/11)
+## 0.3.0 (released 2013/04/12)
+
+This release contains many changes related to the changes in Vagrant 1.1+.
+Vagrant 1.1 introduces the concept of providers (like virtualbox or
+vmware_fusion) which affect the API of `vagrant box` commands and the output
+of `vagrant status` (and other commands).  
 
 - Add new vm state: ABORTED
   Author: Robert Strind (https://github.com/stribert)
@@ -13,6 +18,7 @@ changes) for each release of python-vagrant.
   Author: Todd DeLuca (https://github.com/todddeluca)
 - Fix parsing of vagrant 1.1 status messages.
   Author: Vincent Viallet (https://github.com/zbal)
+  Author: Todd DeLuca (https://github.com/todddeluca)
 - Add new lifecycle method, suspend(), corresponding to `vagrant suspend`.
   Author: Todd DeLuca (https://github.com/todddeluca)
 
