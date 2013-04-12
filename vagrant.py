@@ -374,27 +374,19 @@ class Vagrant(object):
 
         See https://github.com/bitprophet/ssh/blob/master/ssh/config.py for a
         more compliant ssh config file parser.
-
-        This regex-based parser is meant to support vagrant ssh-config output
-        that may include Warning messages 
-        example: using Vagrantfile format 1 on vagrant 1.1 (that supports V2)
         '''
-        m = re.search(r'(Host\s+(?P<Host>.*))\n' +
-            r'\s*(HostName\s+(?P<HostName>.*))\n' +
-            r'\s*(User\s+(?P<User>.*))\n' +
-            r'\s*(Port\s+(?P<Port>.*))\n' +
-            r'\s*(UserKnownHostsFile\s+(?P<UserKnownHostsFile>.*))\n' +
-            r'\s*(StrictHostKeyChecking\s+(?P<StrictHostKeyChecking>.*))\n' +
-            r'\s*(PasswordAuthentication\s+(?P<PasswordAuthentication>.*))\n' +
-            r'\s*(IdentityFile\s+\"(?P<IdentityFile>.*)\")\n' +
-            r'\s*(IdentitiesOnly\s+(?P<IdentitiesOnly>.*))\n' +
-            r'\s*(LogLevel\s+(?P<LogLevel>.*))\n',
-            ssh_config,
-            re.MULTILINE
-        )
-        if m:
-            conf = m.groupdict('')
-
+        conf = dict()
+        started_parsing = False
+        for line in ssh_config.splitlines():
+            if line.strip().startswith('Host ') and not started_parsing:
+                started_parsing = True
+            if not started_parsing or not line.strip() or line.strip().startswith('#'):
+                continue
+            keyval = line.strip().split(None, 1)
+            conf[keyval[0]] = keyval[1]
+        # Cleanup double quotes for IdentityFile
+        if conf['IdentityFile']:
+            conf['IdentityFile'] = conf['IdentityFile'].strip('"')
         return conf
 
     def _run_vagrant_command(self, *args):
