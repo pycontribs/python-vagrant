@@ -361,6 +361,7 @@ class Vagrant(object):
         file.  It makes assumptions that are (hopefully) correct for the output
         of `vagrant ssh-config [vm-name]`.  Specifically it assumes that there
         is only one Host section, the default vagrant host.  It assumes that
+        the parameters of the ssh config are not changing.
         every line is of the form 'key  value', where key is a single token
         without any whitespace and value is the remaining part of the line.
         All leading and trailing whitespace is removed from key and value.  For
@@ -375,10 +376,16 @@ class Vagrant(object):
         See https://github.com/bitprophet/ssh/blob/master/ssh/config.py for a
         more compliant ssh config file parser.
         '''
-        # skip blank lines and comment lines
-        conf = dict(line.strip().split(None, 1) for line in
-                    ssh_config.splitlines() if line.strip() and
-                    not line.strip().startswith('#'))
+        conf = dict()
+        started_parsing = False
+        for line in ssh_config.splitlines():
+            if line.strip().startswith('Host ') and not started_parsing:
+                started_parsing = True
+            if not started_parsing or not line.strip() or line.strip().startswith('#'):
+                continue
+            key, value = line.strip().split(None, 1)
+            # Remove leading and trailing " from the values
+            conf[key] = value.strip('"')
         return conf
 
     def _run_vagrant_command(self, *args):
