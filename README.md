@@ -12,11 +12,10 @@ virtual machines (boxes).  This module is useful for:
 - Getting ssh configuration information useful for SSHing into the box. (`host`, `port`, ...)
 - Running `vagrant` commands in a multi-VM environment
   (http://vagrantup.com/v1/docs/multivm.html) by using `vm_name` parameter.
-- Auto downloading of official boxes using init() .
 - Initializing the VM based on a named base box, using init().
-- Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 - Adding, Removing, and Listing boxes (`box add`, `box remove`, `box list`).
 - Provisioning - up() accepts no_provision and there is a provision() method.
+- Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 
 This package is _alpha_ and its API is not guaranteed to be stable.  The API
 attempts to be congruent with the `vagrant` API terminology, to facilitate
@@ -24,7 +23,7 @@ knowledge transfer for users already familiar with Vagrant.
 
 I wanted python bindings for Vagrant so I could programmatically access my
 vagrant box using Fabric.  Drop me a line to let me know how you use
-python-vagrant.
+python-vagrant.  -Todd DeLuca
 
 
 ## Contribute
@@ -38,9 +37,9 @@ Please see CHANGELOG.md for a detailed list of contributions and authors.
 
 ## Requirements
 
-- A working installation of Vagrant (e.g. Vagrant 1.0.5)
-- Vagrant requires VirtualBox (e.g. VirtualBox 4.2.4)
-- Python 2.7 (since that is the only version it has been tested with.)
+- Vagrant 1.1 or greater (Currently tested with 1.1.5).
+- Vagrant requires VirtualBox (e.g. VirtualBox 4.2.10) or another provider.
+- Python 2.7 (the only version this package has been tested with.)
 - The Sahara gem for Vagrant is optional.  It will allow you to use
   `SandboxVagrant`.
 
