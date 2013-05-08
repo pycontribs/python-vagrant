@@ -64,6 +64,7 @@ def which(program):
 
 # The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
 VAGRANT_EXE = which('vagrant')
+assert VAGRANT_EXE, 'Vagrant executable cannot be found. Please check if vagrant executable is in system path.'
 
 
 class Vagrant(object):
@@ -489,8 +490,8 @@ class Vagrant(object):
         # filter out None args.  Since vm_name is None in non-Multi-VM
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
-        command = ['vagrant'] + [arg for arg in args if arg is not None]
-        return subprocess.check_output(command, cwd=self.root)
+        command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
+        return subprocess.check_output(command, cwd=self.root, shell=True)
 
     def _confirm(self, prompt=None, resp=False):
         '''
