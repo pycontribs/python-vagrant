@@ -43,27 +43,64 @@ __version__ = '0.3.0'
 
 def which(program):
     '''
-    Emulate unix 'which' command.
+    Emulate unix 'which' command.  If program is a path to an executable file
+    (i.e. it contains any directory components, like './myscript'), return
+    program.  Otherwise, if an executable file matching program is found in one
+    of the directories in the PATH environment variable, return the first match
+    found.
+
+    On Windows, if PATHEXT is defined and program does not include an
+    extension, include the extensions in PATHEXT when searching for a matching
+    executable file.
+
+    Return None if no executable file is found.
+
     http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python/377028#377028
+    https://github.com/webcoyote/vagrant/blob/f70507062e3b30c00db1f0d8b90f9245c4c997d4/lib/vagrant/util/file_util.rb
     '''
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
-    if fpath:
+    # If program contains any dir components, do not search the path
+    # e.g. './backup', '/bin/ls'
+    if os.path.dirname(program):
         if is_exe(program):
             return program
+        else:
+            return None
+
+    # Only search PATH if there is one to search.
+    if 'PATH' not in os.environ:
+        return None
+
+    # Are we on windows?
+    # http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
+    windows = (os.name == 'nt')
+    # Does program have an extension?
+    has_ext = os.path.splitext(program)[1]
+    if windows and not has_ext:
+        # If windows and no extension, search for program + ext for each
+        # extension in PATHEXT.  http://environmentvariables.org/PathExt
+        # e.g. ['.EXE', '.CMD', '.BAT']
+        exts = os.environ.get('PATHEXT', '').split(';')
     else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
+        # Otherwise, just search for program
+        exts = ['']
+
+    programs = [program + ext for ext in exts]
+    for path in os.environ['PATH'].split(os.pathsep):
+        for p in programs:
+            fpath = os.path.join(path, p)
+            if is_exe(fpath):
+                return fpath
 
     return None
 
 
 # The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
 VAGRANT_EXE = which('vagrant')
+assert VAGRANT_EXE, ('The Vagrant executable cannot be found. ' +
+                     'Please check if it is in the system path.')
 
 
 class Vagrant(object):
@@ -489,7 +526,7 @@ class Vagrant(object):
         # filter out None args.  Since vm_name is None in non-Multi-VM
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
-        command = ['vagrant'] + [arg for arg in args if arg is not None]
+        command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
         return subprocess.check_output(command, cwd=self.root)
 
     def _confirm(self, prompt=None, resp=False):
