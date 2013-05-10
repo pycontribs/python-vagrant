@@ -4,6 +4,17 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.3.1 (released 2013/05/09)
+
+This release includes two bug fixes aimed at getting vagrant commands to work
+on Windows:
+
+- Use explicit vagrant executable instead of 'vagrant' in subprocess commands.
+  Author: Mohan Raj Rajamanickam (https://github.com/mohanraj-r)
+- Fix 'which' command so that it finds the vagrant executable on the PATH in
+  Windows.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+  Windows Tester: Mohan Raj Rajamanickam (https://github.com/mohanraj-r)
 
 ## 0.3.0 (released 2013/04/12)
 
