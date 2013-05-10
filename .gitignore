@@ -6,3 +6,8 @@
 .vagrant
 Vagrantfile
 
+# Ingore python packaging files/dirs
+/build/
+/dist/
+/python_vagrant.egg-info/
+
