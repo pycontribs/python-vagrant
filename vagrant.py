@@ -153,12 +153,13 @@ class Vagrant(object):
         '''
         self._run_vagrant_command('init', box_name, box_url)
 
-    def up(self, no_provision=False, vm_name=None):
+    def up(self, no_provision=False, provider=None, vm_name=None):
         '''
         Launch the Vagrant box.
         '''
         no_provision_arg = '--no-provision' if no_provision else None
-        self._run_vagrant_command('up', vm_name, no_provision_arg)
+        provider_arg = '--provider %s' % provider if provider else None
+        self._run_vagrant_command('up', vm_name, no_provision_arg, provider_arg)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
         except subprocess.CalledProcessError:
