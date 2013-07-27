@@ -158,7 +158,7 @@ class Vagrant(object):
         Launch the Vagrant box.
         '''
         no_provision_arg = '--no-provision' if no_provision else None
-        provider_arg = '--provider %s' % provider if provider else None
+        provider_arg = '--provider=%s' % provider if provider else None
         self._run_vagrant_command('up', vm_name, no_provision_arg, provider_arg)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
