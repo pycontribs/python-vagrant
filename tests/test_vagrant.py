@@ -159,22 +159,18 @@ def test_vm_status():
     Test whether vagrant.status() correctly reports state of the VM.
     '''
     v = vagrant.Vagrant(TD)
-    eq_(v.status(), v.NOT_CREATED, 
-        "Before going up status should be vagrant.NOT_CREATED")
+    assert v.NOT_CREATED in v.status().values(), "Before going up status should be vagrant.NOT_CREATED"
     command = 'vagrant up'
     subprocess.check_call(command, cwd=TD, shell=True)
-    eq_(v.status(), v.RUNNING, 
-        "After going up status should be vagrant.RUNNING")
+    assert v.RUNNING in v.status().values(), "After going up status should be vagrant.RUNNING"
     
     command = 'vagrant halt'
     subprocess.check_call(command, cwd=TD, shell=True)
-    eq_(v.status(), v.POWEROFF, 
-        "After halting status should be vagrant.POWEROFF")
+    assert v.POWEROFF in v.status().values(), "After halting status should be vagrant.POWEROFF"
 
     command = 'vagrant destroy -f'
     subprocess.check_call(command, cwd=TD, shell=True)
-    eq_(v.status(), v.NOT_CREATED, 
-        "After destroying status should be vagrant.NOT_CREATED")
+    assert v.NOT_CREATED in v.status().values(), "After destroying status should be vagrant.NOT_CREATED"
     
 
 @with_setup(setup_vm, teardown_vm)
@@ -188,19 +184,19 @@ def test_vm_lifecycle():
     # Test init by removing Vagrantfile, since v.init() will create one.
     os.unlink(os.path.join(TD, 'Vagrantfile'))
     v.init(TEST_BOX_NAME)
-    eq_(v.status(), v.NOT_CREATED)
+    assert v.NOT_CREATED in v.status().values()
         
     v.up()
-    eq_(v.status(), v.RUNNING)
+    assert v.RUNNING in v.status().values()
     
     v.suspend()
-    eq_(v.status(), v.SAVED)
+    assert v.SAVED in v.status().values()
     
     v.halt()
-    eq_(v.status(), v.POWEROFF)
+    assert v.POWEROFF in v.status().values()
     
     v.destroy()
-    eq_(v.status(), v.NOT_CREATED)
+    assert v.NOT_CREATED in v.status().values()
 
 
 @with_setup(setup_vm, teardown_vm)
@@ -236,7 +232,7 @@ def test_vm_config():
         "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
     
     keyfile = v.keyfile()
-    eq_('"' + keyfile + '"', parsed_config["IdentityFile"])
+    eq_(keyfile, parsed_config["IdentityFile"])
 
 
 @with_setup(setup_vm, teardown_vm)
@@ -260,40 +256,28 @@ def test_vm_sandbox_mode():
         v = vagrant.SandboxVagrant(TD)
         
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "unknown", 
-            "Before the VM goes up the status should be 'unknown', " +
-            "got:'{}'".format(sandbox_status))
+        assert "unknown" in v.status().values(), "Before the VM goes up the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
         
         v.up()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "off", 
-            "After the VM goes up the status should be 'off', " +
-            "got:'{}'".format(sandbox_status))
+        assert "off" in v.status().values(), "After the VM goes up the status should be 'off', " + "got:'{}'".format(sandbox_status)
         
         v.sandbox_on()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "on", 
-            "After enabling the sandbox mode the status should be 'on', " +
-            "got:'{}'".format(sandbox_status))
+        assert "on" in v.status().values(), "After enabling the sandbox mode the status should be 'on', " + "got:'{}'".format(sandbox_status)
         
         v.sandbox_off()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "off", 
-            "After disabling the sandbox mode the status should be 'off', " +
-            "got:'{}'".format(sandbox_status))
+        assert "off" in v.status().values(), "After disabling the sandbox mode the status should be 'off', " + "got:'{}'".format(sandbox_status)
         
         v.sandbox_on()
         v.halt()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "on", 
-            "After halting the VM the status should be 'on', " +
-            "got:'{}'".format(sandbox_status))
+        assert "on" in v.status().values(), "After halting the VM the status should be 'on', " + "got:'{}'".format(sandbox_status)
         
         v.up()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "on", 
-            "After bringing the VM up again the status should be 'on', " +
-            "got:'{}'".format(sandbox_status))
+        assert "on" in v.status().values(), "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
         
         test_file_contents = _read_test_file(v)
         print test_file_contents
@@ -331,9 +315,7 @@ def test_vm_sandbox_mode():
         
         v.destroy()
         sandbox_status = v.sandbox_status()
-        eq_(sandbox_status, "unknown", 
-            "After destroying the VM the status should be 'unknown', " +
-            "got:'{}'".format(sandbox_status))
+        assert "unknown" in v.status().values(), "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
         
 @with_setup(setup_vm, teardown_vm)
@@ -411,29 +393,29 @@ def test_multivm_lifecycle():
     eq_(statuses[VM_2], v.NOT_CREATED)
 
     v.up(vm_name=VM_1)
-    eq_(v.status(vm_name=VM_1), v.RUNNING)
-    eq_(v.status(vm_name=VM_2), v.NOT_CREATED)
+    eq_(v.status()[VM_1], v.RUNNING)
+    eq_(v.status()[VM_2], v.NOT_CREATED)
 
     # start both vms
     v.up()
-    eq_(v.status(vm_name=VM_1), v.RUNNING)
-    eq_(v.status(vm_name=VM_2), v.RUNNING)
+    eq_(v.status()[VM_1], v.RUNNING)
+    eq_(v.status()[VM_2], v.RUNNING)
 
     v.halt(vm_name=VM_1)
-    eq_(v.status(vm_name=VM_1), v.POWEROFF)
-    eq_(v.status(vm_name=VM_2), v.RUNNING)
+    eq_(v.status()[VM_1], v.POWEROFF)
+    eq_(v.status()[VM_2], v.RUNNING)
 
     v.destroy(vm_name=VM_1)
-    eq_(v.status(vm_name=VM_1), v.NOT_CREATED)
-    eq_(v.status(vm_name=VM_2), v.RUNNING)
+    eq_(v.status()[VM_1], v.NOT_CREATED)
+    eq_(v.status()[VM_2], v.RUNNING)
 
     v.suspend(vm_name=VM_2)
-    eq_(v.status(vm_name=VM_1), v.NOT_CREATED)
-    eq_(v.status(vm_name=VM_2), v.SAVED)
+    eq_(v.status()[VM_1], v.NOT_CREATED)
+    eq_(v.status()[VM_2], v.SAVED)
 
     v.destroy(vm_name=VM_2)
-    eq_(v.status(vm_name=VM_1), v.NOT_CREATED)
-    eq_(v.status(vm_name=VM_2), v.NOT_CREATED)
+    eq_(v.status()[VM_1], v.NOT_CREATED)
+    eq_(v.status()[VM_2], v.NOT_CREATED)
 
 
 @with_setup(setup_multivm, teardown_multivm)
@@ -469,7 +451,7 @@ def test_multivm_config():
         "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
 
     keyfile = v.keyfile(vm_name=VM_1)
-    eq_('"' + keyfile + '"', parsed_config["IdentityFile"])
+    eq_(keyfile, parsed_config["IdentityFile"])
 
 
 def _execute_command_in_vm(v, command):
