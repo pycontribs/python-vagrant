@@ -33,6 +33,12 @@ https://github.com/todddeluca/python-vagrant.
 
 Please see CHANGELOG.md for a detailed list of contributions and authors.
 
+When making a pull request, please include unit tests that test your changes
+and make sure any existing tests still work.  One can test with:
+
+    cd /path/to/python-vagrant
+    nosetests
+
 
 ## Requirements
 
