@@ -193,10 +193,10 @@ class Vagrant(object):
 
     def status(self, vm_name=None):
         '''
-        Returns the status of a Vagrant box or a dictionary mapping vm names
-        to statuses.  Statuses are RUNNING, POWEROFF, SAVED and NOT_CREATED,
-        corresponding to vagrant up, halt, suspend, and destroy, respectively.
-        
+        Returns a dictionary mapping Vagrant box names to statuses.  Statuses
+        are RUNNING, POWEROFF, SAVED and NOT_CREATED, corresponding to vagrant
+        up, halt, suspend, and destroy, respectively.
+
         In a single-VM environment or when the vm_name parameter is used in
         a multi-VM environment, a status string is returned:
 
@@ -266,15 +266,7 @@ class Vagrant(object):
             elif state == 3 and not line.strip():
                 break
 
-        if len(statuses) == 0:
-            # no status found
-            return None
-        elif len(statuses) == 1:
-            # single-VM environment or multi-VM env and vm_name arg given.
-            return statuses.values()[0]
-        else:
-            # multi-VM environment
-            return statuses
+        return statuses
 
     def conf(self, ssh_config=None, vm_name=None):
         '''
