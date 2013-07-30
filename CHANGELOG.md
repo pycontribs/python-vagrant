@@ -4,6 +4,27 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.4.0 (released 2013/07/30)
+
+To indicate that this release includes a significant backwards-incompatible API
+change to `status`, the minor version number is being bumped.
+
+Backwards-incompatible enhancements and bug fixes:
+
+- Return a dictionary from `status()` in all cases, instead of returning None
+  for no status found, the status string for a single-VM or multi-VM with a 
+  VM name specified, or a dictionary for the multi-VM case.  This change makes
+  the return value more consistent.  It also more closely parallels the return
+  value of the underlying `vagrant status` call.
+  Author: Alek Storm (https://github.com/alekstorm)
+  Author: Todd DeLuca (https://github.com/todddeluca) fixed tests.
+
+Enhancements and bug fixes:
+
+- Add ability for up to take a provider option
+  Author: Brett Cooley (https://github.com/brcooley)
+
+
 ## 0.3.1 (released 2013/05/09)
 
 This release includes two bug fixes aimed at getting vagrant commands to work

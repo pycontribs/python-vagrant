@@ -38,7 +38,7 @@ import subprocess
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
 
 def which(program):
