@@ -1,4 +1,3 @@
-
 ## Introduction
 
 Python-vagrant is a python module that provides a _thin_ wrapper around the
@@ -82,5 +81,17 @@ current directory) and running a fabric task on it:
     env.disable_known_hosts = True # useful for when the vagrant box ip changes.
     execute(mytask) # run a fabric task on the vagrant host.
 
+Another example showing how to use vagrant multi-vm feature with fabric:
 
+    import vagrant
+    from fabric.api import *
 
+    @task
+    def start(machine_name):
+       """Starts the specified machine using vagrant"""
+       v = vagrant.Vagrant()
+       v.up(vm_name=machine_name)
+       with settings(host_string= v.user_hostname_port(vm_name=machine_name),
+                     key_filename = v.keyfile(vm_name=machine_name),
+                     disable_known_hosts = True):
+            run("echo hello")
