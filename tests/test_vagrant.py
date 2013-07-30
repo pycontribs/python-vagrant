@@ -61,13 +61,15 @@ def list_boxes():
     # precise64                (virtualbox)
     # python-vagrant-base      (virtualbox)
     # python-vagrant-dummy-box (virtualbox)
+    # Example `box list` output with no boxes (vagrant 1.2.7):
+    # There are no installed boxes! Use `vagrant box add` to add some.
     listing = subprocess.check_output('vagrant box list', shell=True)
     boxes = []
     for line in listing.splitlines():
         m = re.search(r'^\s*(?P<name>.+?)\s+\((?P<provider>[^)]+)\)\s*$', line)
         if m:
             print m.groups()
-        boxes.append((m.group('name'), m.group('provider')))
+            boxes.append((m.group('name'), m.group('provider')))
     return boxes
 
 
@@ -94,6 +96,7 @@ def setup():
     sys.stderr.write('module setup()\n')
     global TD
     TD = tempfile.mkdtemp()
+    sys.stderr.write('test temp dir: {}\n'.format(TD))
     boxes = list_box_names()
     if TEST_BOX_NAME not in boxes:
         cmd = 'vagrant box add {} {}'.format(TEST_BOX_NAME, TEST_BOX_URL)
