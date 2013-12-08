@@ -42,11 +42,17 @@ class VagrantTestCase(TestCase):
 
 	def run(self, result=None):
 		"""Override run to have provide a hook into an alternative to tearDownClass with a reference to self"""
+		self.setUpOnce()
 		run = super(VagrantTestCase, self).run(result)
-		self.cleanup()
+		self.tearDownOnce()
 		return run
 
-	def cleanup(self):
+	def setUpOnce(self):
+		"""Collect the box states before starting"""
+		for box_name in self.vagrant_boxes:
+			self.__initial_box_statuses[box_name] = self.vagrant.status()[box_name]
+
+	def tearDownOnce(self):
 		"""Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
 		if not self.restart_boxes:
 			self.restore_box_states()
@@ -61,8 +67,6 @@ class VagrantTestCase(TestCase):
 	def setUp(self):
 		"""Starts all boxes before running tests"""
 		for box_name in self.vagrant_boxes:
-
-			self.__initial_box_statuses[box_name] = self.vagrant.status()[box_name]
 			self.vagrant.up(vm_name=box_name)
 
 		super(VagrantTestCase, self).setUp()
