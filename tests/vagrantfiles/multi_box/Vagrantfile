@@ -1,0 +1,15 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+boxes = ['precise32', 'precise64']
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  boxes.each do |box|
+    config.vm.define box do |conf|
+      conf.vm.box = box
+      conf.vm.box_url = "http://files.vagrantup.com/#{box}.box"
+    end
+  end
+end

@@ -1,10 +1,9 @@
-
 import os
 import re
-from setuptools import setup, find_packages
+from setuptools import setup
 
 # parse version from package/module without importing or evaluating the code
-with open('vagrant.py') as fh:
+with open('vagrant/__init__.py') as fh:
     for line in fh:
         m = re.search(r"^__version__ = '(?P<version>[^']+)'$", line)
         if m:
