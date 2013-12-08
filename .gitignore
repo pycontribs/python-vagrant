@@ -2,9 +2,11 @@
 .coverage
 .project
 .pydevproject
+.idea
 
 .vagrant
 Vagrantfile
+!tests/vagrantfiles/**/Vagrantfile
 
 # Ingore python packaging files/dirs
 /build/
