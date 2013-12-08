@@ -29,15 +29,9 @@ class VagrantTestCase(TestCase):
 		Vagrant.SAVED: 'suspend',
 	}
 
-	def __new__(cls, *args):
-		"""
-		Give the class access to a vagrant attribute that uses the vagrant_root attribute provided in the class definition
-		"""
-		cls.vagrant = Vagrant(cls.vagrant_root)
-		return super(VagrantTestCase, cls).__new__(cls, *args)
-
 	def __init__(self, *args, **kwargs):
 		"""Check that the vagrant_boxes attribute is not left empty, and is populated by all boxes if left blank"""
+		self.vagrant = Vagrant(self.vagrant_root)
 		if not self.vagrant_boxes:
 			boxes = self.vagrant.status().keys()
 			if len(boxes) == 1:
@@ -46,19 +40,23 @@ class VagrantTestCase(TestCase):
 				self.vagrant_boxes = boxes
 		super(VagrantTestCase, self).__init__(*args, **kwargs)
 
-	@classmethod
-	def tearDownClass(cls):
-		"""Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
-		if not cls.restart_boxes:
-			cls.restore_box_states()
+	def run(self, result=None):
+		"""Override run to have provide a hook into an alternative to tearDownClass with a reference to self"""
+		run = super(VagrantTestCase, self).run(result)
+		self.cleanup()
+		return run
 
-	@classmethod
-	def restore_box_states(cls):
+	def cleanup(self):
+		"""Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
+		if not self.restart_boxes:
+			self.restore_box_states()
+
+	def restore_box_states(self):
 		"""Restores all boxes to their original states"""
-		for box_name in cls.vagrant_boxes:
-			action = cls.__cleanup_actions.get(cls.__initial_box_statuses[box_name])
+		for box_name in self.vagrant_boxes:
+			action = self.__cleanup_actions.get(self.__initial_box_statuses[box_name])
 			if action:
-				getattr(cls.vagrant, action)(vm_name=box_name)
+				getattr(self.vagrant, action)(vm_name=box_name)
 
 	def setUp(self):
 		"""Starts all boxes before running tests"""
