@@ -40,6 +40,28 @@ class VagrantTestCase(TestCase):
 				self.vagrant_boxes = boxes
 		super(VagrantTestCase, self).__init__(*args, **kwargs)
 
+	def assertBoxStatus(self, box, status):
+		"""Assertion for a box status"""
+		box_status = self.vagrant.status()[box]
+		if box_status != status:
+			self.failureException('{} has status {}, not {}'.format(box, box_status, status))
+
+	def assertBoxUp(self, box):
+		"""Assertion for a box being up"""
+		self.assertBoxStatus(box, Vagrant.RUNNING)
+
+	def assertBoxSuspended(self, box):
+		"""Assertion for a box being up"""
+		self.assertBoxStatus(box, Vagrant.SAVED)
+
+	def assertBoxHalted(self, box):
+		"""Assertion for a box being up"""
+		self.assertBoxStatus(box, Vagrant.POWEROFF)
+
+	def assertBoxNotCreated(self, box):
+		"""Assertion for a box being up"""
+		self.assertBoxStatus(box, Vagrant.NOT_CREATED)
+
 	def run(self, result=None):
 		"""Override run to have provide a hook into an alternative to tearDownClass with a reference to self"""
 		self.setUpOnce()
