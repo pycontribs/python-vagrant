@@ -4,6 +4,12 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.4.2 (released 2013/12/08)
+
+This release fixes a bug in setup.py.
+Author: Nick Allen (https://github.com/nick-allen).
+
+
 ## 0.4.1 (released 2013/12/08)
 
 This release includes improved testing, including a new VagrantTestCase.
