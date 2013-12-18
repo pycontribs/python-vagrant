@@ -137,7 +137,7 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
 
-    def init(self, box_name=None, box_url=None):
+    def init(self, box_name=None, box_url=None, **kwargs):
         '''
         From the Vagrant docs:
 
@@ -151,15 +151,19 @@ class Vagrant(object):
 
         Note: if box_url is given, box_name should also be given.
         '''
-        self._run_vagrant_command('init', box_name, box_url)
+        self._run_vagrant_command('init', box_name, box_url, **kwargs)
 
-    def up(self, no_provision=False, provider=None, vm_name=None):
+    def up(self, no_provision=False, provider=None, vm_name=None, **kwargs):
         '''
         Launch the Vagrant box.
         '''
         no_provision_arg = '--no-provision' if no_provision else None
         provider_arg = '--provider=%s' % provider if provider else None
-        self._run_vagrant_command('up', vm_name, no_provision_arg, provider_arg)
+        self._run_vagrant_command('up',
+                                  vm_name,
+                                  no_provision_arg,
+                                  provider_arg,
+                                  **kwargs)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
         except subprocess.CalledProcessError:
@@ -167,28 +171,28 @@ class Vagrant(object):
             # however vm_name is required for conf() or ssh_config().
             pass
 
-    def suspend(self, vm_name=None):
+    def suspend(self, vm_name=None, **kwargs):
         '''
         Suspend/save the machine.
         '''
-        self._run_vagrant_command('suspend', vm_name)
+        self._run_vagrant_command('suspend', vm_name, **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def halt(self, vm_name=None, force=False):
+    def halt(self, vm_name=None, force=False, **kwargs):
         '''
         Halt the Vagrant box.
 
         force: If True, force shut down.
         '''
         force_opt = '--force' if force else None
-        self._run_vagrant_command('halt', vm_name, force_opt)
+        self._run_vagrant_command('halt', vm_name, force_opt, **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def destroy(self, vm_name=None):
+    def destroy(self, vm_name=None, **kwargs):
         '''
         Terminate the running Vagrant box.
         '''
-        self._run_vagrant_command('destroy', vm_name, '--force')
+        self._run_vagrant_command('destroy', vm_name, '--force', **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def status(self, vm_name=None):
@@ -240,7 +244,7 @@ class Vagrant(object):
         # default                  poweroff (virtualbox)
 
         output = self._run_vagrant_command('status', vm_name)
-        # The format of output is expected to be a 
+        # The format of output is expected to be a
         #   - "Current VM states:" line (vagrant 1)
         #   - "Current machine states" line (vagrant 1.1)
         # followed by a blank line, followed by one or more status lines,
@@ -396,7 +400,7 @@ class Vagrant(object):
         port_suffix = ':' + port if port else ''
         return user_prefix + self.hostname(vm_name=vm_name) + port_suffix
 
-    def box_add(self, name, url, provider=None, force=False):
+    def box_add(self, name, url, provider=None, force=False, **kwargs):
         '''
         Adds a box with given name, from given url.
 
@@ -407,7 +411,7 @@ class Vagrant(object):
         if provider is not None:
             cmd += ['--provider', provider]
 
-        self._run_vagrant_command(*cmd)
+        self._run_vagrant_command(*cmd, **kwargs)
 
     def box_list(self):
         '''
@@ -433,18 +437,18 @@ class Vagrant(object):
             boxes.append((name, provider))
         return boxes
 
-    def box_remove(self, name, provider):
+    def box_remove(self, name, provider, **kwargs):
         '''
         Removes the box matching name and provider. It is an error if no box
         matches name and provider.
         '''
-        self._run_vagrant_command('box', 'remove', name, provider)
+        self._run_vagrant_command('box', 'remove', name, provider, **kwargs)
 
-    def provision(self, vm_name=None):
+    def provision(self, vm_name=None, **kwargs):
         '''
         Runs the provisioners defined in the Vagrantfile.
         '''
-        self._run_vagrant_command('provision', vm_name)
+        self._run_vagrant_command('provision', vm_name, **kwargs)
 
     def _parse_provider_line(self, line):
         '''
@@ -510,7 +514,7 @@ class Vagrant(object):
             conf[key] = value.strip('"')
         return conf
 
-    def _run_vagrant_command(self, *args):
+    def _run_vagrant_command(self, *args, **kwargs):
         '''
         args: A tuple of arguments to a vagrant command line.
         e.g. ['up', 'my_vm_name', '--no-provision'] or
@@ -520,7 +524,10 @@ class Vagrant(object):
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
         command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
-        return subprocess.check_output(command, cwd=self.root)
+        if not kwargs.get('capture_output', True):
+            subprocess.call(command, cwd=self.root)
+        else:
+            return subprocess.check_output(command, cwd=self.root)
 
     def _confirm(self, prompt=None, resp=False):
         '''
@@ -629,4 +636,3 @@ class SandboxVagrant(Vagrant):
         else:
             sahara_status = tokens[-1]
         return sahara_status
-
