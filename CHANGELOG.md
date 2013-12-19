@@ -4,6 +4,12 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.4.3 (released 2013/12/18)
+
+Allow the underlying vagrant command output to be visible on the command line.
+Author: Alexandre Joseph (https://github.com/jexhson)
+
+
 ## 0.4.2 (released 2013/12/08)
 
 This release fixes a bug in setup.py.
