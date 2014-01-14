@@ -33,6 +33,7 @@ Dependencies:
 
 import os
 import re
+import sys
 import subprocess
 
 
@@ -266,7 +267,9 @@ class Vagrant(object):
                 if not m:
                     raise Exception('ParseError: Failed to properly parse vm name and status from line.', line, output)
                 else:
-                    statuses[m.group('vm_name')] = m.group('status')
+                    # Include the provider (vagrant 1.1+) in the returned dictionary if available
+                    statuses[m.group('vm_name')] = {"status"  : m.group('status'),
+                                                    "provider": provider}
             elif state == 3 and not line.strip():
                 break
 
@@ -524,10 +527,21 @@ class Vagrant(object):
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
         command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
-        if not kwargs.get('capture_output', True):
-            subprocess.call(command, cwd=self.root)
+
+        # Supress stderr output if the quiet_stderr keyword arg passed
+        if kwargs.get('quiet_stderr', True):
+            fo_devnull = open(os.devnull, "wb")
         else:
-            return subprocess.check_output(command, cwd=self.root)
+            fo_devnull = sys.stderr
+
+
+        if not kwargs.get('capture_output', True):
+            subprocess.call(command, cwd=self.root, stderr=fo_devnull)
+            fo_devnull.close()
+        else:
+            ret = subprocess.check_output(command, cwd=self.root, stderr=fo_devnull)
+            fo_devnull.close()
+            return ret
 
     def _confirm(self, prompt=None, resp=False):
         '''
