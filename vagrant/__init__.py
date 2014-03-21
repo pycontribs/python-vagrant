@@ -142,6 +142,16 @@ class Vagrant(object):
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
 
+    def version(self):
+        '''
+        Return the installed vagrant version, as a string, e.g. '1.5.0'
+        '''
+        output = self._run_vagrant_command('--version')
+        m = re.search(r'^Vagrant (?P<version>.+)$', output)
+        if m is None:
+            raise Exception('Failed to parse vagrant --version output. output={!r}'.format(output))
+        return m.group('version')
+        
     def init(self, box_name=None, box_url=None, **kwargs):
         '''
         From the Vagrant docs:
