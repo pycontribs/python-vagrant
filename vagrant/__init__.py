@@ -617,7 +617,10 @@ class Vagrant(object):
         if not kwargs.get('capture_output', True):
             subprocess.call(command, cwd=self.root)
         else:
-            return subprocess.check_output(command, cwd=self.root)
+            try:
+                return subprocess.check_output(command, cwd=self.root)
+            except subprocess.CalledProcessError as e:
+                return e.output
 
     def _confirm(self, prompt=None, resp=False):
         '''
