@@ -4,6 +4,19 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.4.4 (released 2014/03/21)
+
+This minor release *should* be backwards-compatible.
+Add a 'reload' command, which the Vagrant docs describe as akin to a "halt" followed by an "up".
+Add a 'plugin list' command that returns a list of installed plugins.
+Add 'version' command, which gives programmatic access to the vagrant version string.
+Add '--provision-with' option to 'up', 'provision', and 'reload' commands.
+Author: Todd DeLuca (https://github.com/todddeluca)
+
+Add support LXC statuses 'frozen' and 'stopped'
+Author: Allard Hoeve (https://github.com/allardhoeve)
+
+
 ## 0.4.3 (released 2013/12/18)
 
 Allow the underlying vagrant command output to be visible on the command line.
@@ -30,7 +43,7 @@ change to `status`, the minor version number is being bumped.
 Backwards-incompatible enhancements and bug fixes:
 
 - Return a dictionary from `status()` in all cases, instead of returning None
-  for no status found, the status string for a single-VM or multi-VM with a 
+  for no status found, the status string for a single-VM or multi-VM with a
   VM name specified, or a dictionary for the multi-VM case.  This change makes
   the return value more consistent.  It also more closely parallels the return
   value of the underlying `vagrant status` call.
@@ -95,7 +108,7 @@ Backwards-incompatible changes:
 
 ## 0.2.0 (released 2012/12/09)
 
-This release incorporates numerous changes from a couple of forks on github, 
+This release incorporates numerous changes from a couple of forks on github,
 https://github.com/kamilgrymuza/python-vagrant and
 https://github.com/nithinbose87/python-vagrant.
 
@@ -105,15 +118,15 @@ https://github.com/nithinbose87/python-vagrant.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
 - The halt() method which stops the VM without destroying it.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
-- Support for sandbox mode using the Sahara gem 
+- Support for sandbox mode using the Sahara gem
   (https://github.com/jedi4ever/sahara).
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
-- Support for box-related commands - box_add(), box_list(), box_remove() methods. 
+- Support for box-related commands - box_add(), box_list(), box_remove() methods.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
 - Support for provisioning - up() accepts no_provision and there is the provision()
   method.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
-- Added auto download of official boxes in the init() 
+- Added auto download of official boxes in the init()
   Author: Nithin Bose (https://github.com/nithinbose87).
 
 Additionally, support for Multi-VM environments has been added, along with
@@ -140,7 +153,7 @@ several other changes:
   Author: Todd DeLuca (https://github.com/todddeluca).
 - `status()` now returns multiple statuses when in a multi-VM environment.
   Author: Todd DeLuca (https://github.com/todddeluca).
- 
+
 Please note that the changes to sandbox functionality are not
 backwards-compatible with the kamilgrymuza fork, though updating the code to
 use this project should be straightforward, should one want to do so.
@@ -151,7 +164,3 @@ use this project should be straightforward, should one want to do so.
 This is the original release of python-vagrant as its own package.
 
 - Author: Todd DeLuca (https://github.com/todddeluca).
-
-
-
-
