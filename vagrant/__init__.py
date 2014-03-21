@@ -455,6 +455,34 @@ class Vagrant(object):
         '''
         self._run_vagrant_command('provision', vm_name, **kwargs)
 
+    def plugin_list(self):
+        '''
+        Return a list of dicts containing the following information about
+        installed plugins:
+        - 'name': The plugin name, as a string.
+        - 'version': The plugin version, as a string.
+        - 'system': A boolean, presumably indicating whether this plugin is a
+          "core" part of vagrant, though the feature is undocumented.
+        '''
+        output = self._run_vagrant_command('plugin', 'list')
+        return [self._parse_plugin_list_line(l) for l in output.splitlines()]
+
+    def _parse_plugin_list_line(self, line):
+        # As of Vagrant 1.5, the format of the `vagrant plugin list` command can
+        # be inferred here:
+        # https://github.com/mitchellh/vagrant/blob/master/plugins/commands/plugin/action/list_plugins.rb#L35
+        # Example plugin listing lines:
+        # sahara (0.0.16)
+        # vagrant-login (1.0.1, system)
+        regex = re.compile(r'^(?P<name>.+?)\s+\((?P<version>.+?)(?P<system>, system)?\)$')
+        m = regex.search(line)
+        if m is None:
+            raise Exception('Error parsing plugin listing line.', line)
+        else:
+            listing = m.groupdict()
+            listing['system'] = bool(listing['system'])
+            return listing
+
     def _parse_provider_line(self, line):
         '''
         In vagrant 1.1+, `vagrant box list` produces lines like:
