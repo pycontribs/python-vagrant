@@ -151,7 +151,7 @@ class Vagrant(object):
         if m is None:
             raise Exception('Failed to parse vagrant --version output. output={!r}'.format(output))
         return m.group('version')
-        
+
     def init(self, box_name=None, box_url=None, **kwargs):
         '''
         From the Vagrant docs:
@@ -168,16 +168,35 @@ class Vagrant(object):
         '''
         self._run_vagrant_command('init', box_name, box_url, **kwargs)
 
-    def up(self, no_provision=False, provider=None, vm_name=None, **kwargs):
+    def up(self, no_provision=False, provider=None, vm_name=None,
+           provision=None, provision_with=None, **kwargs):
         '''
         Launch the Vagrant box.
+        provision_with: optional list of provisioners to enable.
+        provider: Back the machine with a specific provider
+        no_provision: if True, disable provisioning.  Same as 'provision=False'.
+        provision: optional boolean.  Enable or disable provisioning.  Default
+          behavior is to use the underlying vagrant default.
+        Note: If provision and no_provision are not None, no_provision will be
+        ignored.
         '''
-        no_provision_arg = '--no-provision' if no_provision else None
         provider_arg = '--provider=%s' % provider if provider else None
+        prov_with_arg = None if provision_with is None else '--provision-with'
+        providers_arg = None if provision_with is None else ','.join(provision_with)
+
+        # For the sake of backward compatibility, no_provision is allowed.
+        # However it is ignored if provision is set.
+        if provision is not None:
+            no_provision = None
+        no_provision_arg = '--no-provision' if no_provision else None
+        provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
+
         self._run_vagrant_command('up',
                                   vm_name,
                                   no_provision_arg,
+                                  provision_arg,
                                   provider_arg,
+                                  prov_with_arg, providers_arg,
                                   **kwargs)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
@@ -185,6 +204,40 @@ class Vagrant(object):
             # in multi-VM environments, up() can be used to start all VMs,
             # however vm_name is required for conf() or ssh_config().
             pass
+
+    def provision(self, vm_name=None, provision_with=None, **kwargs):
+        '''
+        Runs the provisioners defined in the Vagrantfile.
+        vm_name: optional VM name string.
+        provision_with: optional list of provisioners to enable.
+          e.g. ['shell', 'chef_solo']
+        '''
+        prov_with_arg = None if provision_with is None else '--provision-with'
+        providers_arg = None if provision_with is None else ','.join(provision_with)
+        self._run_vagrant_command('provision', vm_name, prov_with_arg,
+                                  providers_arg, **kwargs)
+
+    def reload(self, vm_name=None, provision=None,
+               provision_with=None, **kwargs):
+        '''
+        Quoting from Vagrant docs:
+        > The equivalent of running a halt followed by an up.
+
+        > This command is usually required for changes made in the Vagrantfile to take effect. After making any modifications to the Vagrantfile, a reload should be called.
+
+        > The configured provisioners will not run again, by default. You can force the provisioners to re-run by specifying the --provision flag.
+
+        provision: optional boolean.  Enable or disable provisioning.  Default
+          behavior is to use the underlying vagrant default.
+        provision_with: optional list of provisioners to enable.
+          e.g. ['shell', 'chef_solo']
+        '''
+        prov_with_arg = None if provision_with is None else '--provision-with'
+        providers_arg = None if provision_with is None else ','.join(provision_with)
+        provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
+        self._run_vagrant_command('reload', vm_name, provision_arg,
+                                  prov_with_arg, providers_arg,
+                                  **kwargs)
 
     def suspend(self, vm_name=None, **kwargs):
         '''
@@ -458,12 +511,6 @@ class Vagrant(object):
         matches name and provider.
         '''
         self._run_vagrant_command('box', 'remove', name, provider, **kwargs)
-
-    def provision(self, vm_name=None, **kwargs):
-        '''
-        Runs the provisioners defined in the Vagrantfile.
-        '''
-        self._run_vagrant_command('provision', vm_name, **kwargs)
 
     def plugin_list(self):
         '''
