@@ -150,12 +150,13 @@ class Vagrant(object):
         '''
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
+        self._vagrant_exe = None # cache vagrant executable path
 
     def version(self):
         '''
         Return the installed vagrant version, as a string, e.g. '1.5.0'
         '''
-        output = self._run_vagrant_command('--version')
+        output = self._run_vagrant_command(['--version'])
         m = re.search(r'^Vagrant (?P<version>.+)$', output)
         if m is None:
             raise Exception('Failed to parse vagrant --version output. output={!r}'.format(output))
@@ -175,7 +176,7 @@ class Vagrant(object):
 
         Note: if box_url is given, box_name should also be given.
         '''
-        self._run_vagrant_command('init', box_name, box_url, **kwargs)
+        self._call_vagrant_command(['init', box_name, box_url], **kwargs)
 
     def up(self, no_provision=False, provider=None, vm_name=None,
            provision=None, provision_with=None, **kwargs):
@@ -200,12 +201,9 @@ class Vagrant(object):
         no_provision_arg = '--no-provision' if no_provision else None
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
 
-        self._run_vagrant_command('up',
-                                  vm_name,
-                                  no_provision_arg,
-                                  provision_arg,
-                                  provider_arg,
-                                  prov_with_arg, providers_arg,
+        self._call_vagrant_command(['up', vm_name, no_provision_arg,
+                                   provision_arg, provider_arg,
+                                   prov_with_arg, providers_arg],
                                   **kwargs)
         try:
             self.conf(vm_name=vm_name)  # cache configuration
@@ -223,8 +221,8 @@ class Vagrant(object):
         '''
         prov_with_arg = None if provision_with is None else '--provision-with'
         providers_arg = None if provision_with is None else ','.join(provision_with)
-        self._run_vagrant_command('provision', vm_name, prov_with_arg,
-                                  providers_arg, **kwargs)
+        self._call_vagrant_command(['provision', vm_name, prov_with_arg,
+                                   providers_arg], **kwargs)
 
     def reload(self, vm_name=None, provision=None,
                provision_with=None, **kwargs):
@@ -244,15 +242,15 @@ class Vagrant(object):
         prov_with_arg = None if provision_with is None else '--provision-with'
         providers_arg = None if provision_with is None else ','.join(provision_with)
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
-        self._run_vagrant_command('reload', vm_name, provision_arg,
-                                  prov_with_arg, providers_arg,
+        self._call_vagrant_command(['reload', vm_name, provision_arg,
+                                   prov_with_arg, providers_arg],
                                   **kwargs)
 
     def suspend(self, vm_name=None, **kwargs):
         '''
         Suspend/save the machine.
         '''
-        self._run_vagrant_command('suspend', vm_name, **kwargs)
+        self._call_vagrant_command(['suspend', vm_name], **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def halt(self, vm_name=None, force=False, **kwargs):
@@ -262,14 +260,14 @@ class Vagrant(object):
         force: If True, force shut down.
         '''
         force_opt = '--force' if force else None
-        self._run_vagrant_command('halt', vm_name, force_opt, **kwargs)
+        self._call_vagrant_command(['halt', vm_name, force_opt], **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def destroy(self, vm_name=None, **kwargs):
         '''
         Terminate the running Vagrant box.
         '''
-        self._run_vagrant_command('destroy', vm_name, '--force', **kwargs)
+        self._call_vagrant_command(['destroy', vm_name, '--force'], **kwargs)
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def status(self, vm_name=None):
@@ -320,7 +318,7 @@ class Vagrant(object):
         # default                  running (virtualbox)
         # default                  poweroff (virtualbox)
 
-        output = self._run_vagrant_command('status', vm_name)
+        output = self._run_vagrant_command(['status', vm_name])
         # The format of output is expected to be a
         #   - "Current VM states:" line (vagrant 1)
         #   - "Current machine states" line (vagrant 1.1)
@@ -400,7 +398,7 @@ class Vagrant(object):
                 IdentitiesOnly yes
         '''
         # capture ssh configuration from vagrant
-        return self._run_vagrant_command('ssh-config', vm_name)
+        return self._run_vagrant_command(['ssh-config', vm_name])
 
     def user(self, vm_name=None):
         '''
@@ -488,7 +486,7 @@ class Vagrant(object):
         if provider is not None:
             cmd += ['--provider', provider]
 
-        self._run_vagrant_command(*cmd, **kwargs)
+        self._call_vagrant_command(cmd, **kwargs)
 
     def box_list(self):
         '''
@@ -507,7 +505,7 @@ class Vagrant(object):
 
         As of Vagrant >= 1.1, boxes are listed with names and providers.
         '''
-        output = self._run_vagrant_command('box', 'list')
+        output = self._run_vagrant_command(['box', 'list'])
         boxes = []
         for line in output.splitlines():
             name, provider = self._parse_provider_line(line)
@@ -519,7 +517,7 @@ class Vagrant(object):
         Removes the box matching name and provider. It is an error if no box
         matches name and provider.
         '''
-        self._run_vagrant_command('box', 'remove', name, provider, **kwargs)
+        self._call_vagrant_command(['box', 'remove', name, provider], **kwargs)
 
     def plugin_list(self):
         '''
@@ -530,7 +528,7 @@ class Vagrant(object):
         - 'system': A boolean, presumably indicating whether this plugin is a
           "core" part of vagrant, though the feature is undocumented.
         '''
-        output = self._run_vagrant_command('plugin', 'list')
+        output = self._run_vagrant_command(['plugin', 'list'])
         return [self._parse_plugin_list_line(l) for l in output.splitlines()]
 
     def _parse_plugin_list_line(self, line):
@@ -613,44 +611,45 @@ class Vagrant(object):
             conf[key] = value.strip('"')
         return conf
 
-    def _run_vagrant_command(self, *args, **kwargs):
-        '''
-        args: A tuple of arguments to a vagrant command line.
-        e.g. ['up', 'my_vm_name', '--no-provision'] or
-        ['up', None, '--no-provision'] for a non-Multi-VM environment.
-        kwargs:
-        - capture_output.  If False, vagrant command output will be sent
-          to stdout instead of returned from the function.  The default is
-          True.
-        - quiet_stderr:  If True, the stderr of the vagrant command will be
-          sent to devnull.
-        '''
-        vagrant_exe = get_vagrant_executable()
+    def _make_vagrant_command(self, args):
+        if self._vagrant_exe is None:
+            self._vagrant_exe = get_vagrant_executable()
 
-        if not vagrant_exe:
+        if not self._vagrant_exe:
             raise RuntimeError(VAGRANT_NOT_FOUND_WARNING)
 
         # filter out None args.  Since vm_name is None in non-Multi-VM
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
-        command = [vagrant_exe] + [arg for arg in args if arg is not None]
+        return [self._vagrant_exe] + [arg for arg in args if arg is not None]
 
-        # Suppress stderr if quiet_stderr is True
-        if kwargs.get('quiet_stderr', False):
-            fo_stderr = open(os.devnull, 'wb')
+    def _call_vagrant_command(self, args, quiet_stderr=False):
+        '''
+        Run a vagrant command.  Return None.
+        args: A sequence of arguments to a vagrant command line.
+        quiet_stderr: If True, the stderr of the vagrant command will be
+          sent to devnull.
+        '''
+        # Make subprocess command
+        command = self._make_vagrant_command(args)
+        if quiet_stderr:
+            # Redirect stderr to devnull
+            with open(os.devnull, 'wb') as fh:
+                subprocess.check_call(command, cwd=self.root, stderr=fh)
         else:
-            fo_stderr = sys.stderr
+            subprocess.check_call(command, cwd=self.root)
 
-        if not kwargs.get('capture_output', True):
-            retval = subprocess.check_call(command, cwd=self.root, stderr=fo_stderr)
-        else:
-            retval = subprocess.check_output(command, cwd=self.root, stderr=fo_stderr)
+    def _run_vagrant_command(self, args):
+        '''
+        Run a vagrant command and return its stdout.
+        args: A sequence of arguments to a vagrant command line.
+        e.g. ['up', 'my_vm_name', '--no-provision'] or
+        ['up', None, '--no-provision'] for a non-Multi-VM environment.
+        '''
+        # Make subprocess command
+        command = self._make_vagrant_command(args)
+        return subprocess.check_output(command, cwd=self.root)
 
-        # Close what you open
-        if kwargs.get('quiet_stderr', False):
-            fo_stderr.close()
-
-        return retval
 
     def _confirm(self, prompt=None, resp=False):
         '''
@@ -698,20 +697,20 @@ class SandboxVagrant(Vagrant):
     Support for sandbox mode using the Sahara gem (https://github.com/jedi4ever/sahara).
     '''
 
-    def _run_sandbox_command(self, *args):
-        return self._run_vagrant_command('sandbox', *args)
+    def _run_sandbox_command(self, args):
+        return self._run_vagrant_command(['sandbox'] + list(args))
 
     def sandbox_commit(self, vm_name=None):
         '''
         Permanently writes all the changes made to the VM.
         '''
-        self._run_sandbox_command('commit', vm_name)
+        self._run_sandbox_command(['commit', vm_name])
 
     def sandbox_off(self, vm_name=None):
         '''
         Disables the sandbox mode.
         '''
-        self._run_sandbox_command('off', vm_name)
+        self._run_sandbox_command(['off', vm_name])
 
     def sandbox_on(self, vm_name=None):
         '''
@@ -720,13 +719,13 @@ class SandboxVagrant(Vagrant):
         This requires the Sahara gem to be installed
         (https://github.com/jedi4ever/sahara).
         '''
-        self._run_sandbox_command('on', vm_name)
+        self._run_sandbox_command(['on', vm_name])
 
     def sandbox_rollback(self, vm_name=None):
         '''
         Reverts all the changes made to the VM since the last commit.
         '''
-        self._run_sandbox_command('rollback', vm_name)
+        self._run_sandbox_command(['rollback', vm_name])
 
     def sandbox_status(self, vm_name=None):
         '''
@@ -738,7 +737,7 @@ class SandboxVagrant(Vagrant):
         - unknown
         - not installed
         '''
-        vagrant_sandbox_output = self._run_sandbox_command('status', vm_name)
+        vagrant_sandbox_output = self._run_sandbox_command(['status', vm_name])
         return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
 
     def _parse_vagrant_sandbox_status(self, vagrant_output):
