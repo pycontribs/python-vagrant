@@ -39,7 +39,7 @@ import sys
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 
 def which(program):

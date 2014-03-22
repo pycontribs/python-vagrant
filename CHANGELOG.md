@@ -4,6 +4,14 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.4.5 (released 2014/03/22)
+
+- Add a 'quiet_stderr' keyword to silence the stderr output of vagrant commands.
+  Author: Rich Smith (https://github.com/MyNameIsMeerkat).  The original author of the pull request
+  Author: Todd DeLuca.  Split the pull request and tweaked the code.
+- Disable broken SandboxVagrant tests.  Does a Sahara user want to fix these tests?
+  Author: Todd DeLuca.
+
 ## 0.4.4 (released 2014/03/21)
 
 This minor release *should* be backwards-compatible.
