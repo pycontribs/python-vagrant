@@ -34,6 +34,7 @@ Dependencies:
 import os
 import re
 import subprocess
+import sys
 
 
 # python package version
@@ -609,15 +610,34 @@ class Vagrant(object):
         args: A tuple of arguments to a vagrant command line.
         e.g. ['up', 'my_vm_name', '--no-provision'] or
         ['up', None, '--no-provision'] for a non-Multi-VM environment.
+        kwargs:
+        - capture_output.  If False, vagrant command output will be sent
+          to stdout instead of returned from the function.  The default is
+          True.
+        - quiet_stderr:  If True, the stderr of the vagrant command will be
+          sent to devnull.
         '''
         # filter out None args.  Since vm_name is None in non-Multi-VM
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
         command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
-        if not kwargs.get('capture_output', True):
-            subprocess.call(command, cwd=self.root)
+
+        # Suppress stderr if quiet_stderr is True
+        if kwargs.get('quiet_stderr', False):
+            fo_stderr = open(os.devnull, 'wb')
         else:
-            return subprocess.check_output(command, cwd=self.root)
+            fo_stderr = sys.stderr
+
+        if not kwargs.get('capture_output', True):
+            retval = subprocess.check_call(command, cwd=self.root, stderr=fo_stderr)
+        else:
+            retval = subprocess.check_output(command, cwd=self.root, stderr=fo_stderr)
+
+        # Close what you open
+        if kwargs.get('quiet_stderr', False):
+            fo_stderr.close()
+
+        return retval
 
     def _confirm(self, prompt=None, resp=False):
         '''
