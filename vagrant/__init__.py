@@ -651,47 +651,6 @@ class Vagrant(object):
         return subprocess.check_output(command, cwd=self.root)
 
 
-    def _confirm(self, prompt=None, resp=False):
-        '''
-        Prompts for yes or no response from the user. Returns True for yes
-        and False for no.
-
-        :prompt resp: The default value assumed by the caller when
-        user simply types ENTER.
-
-        >>> confirm(prompt='Create Directory?', resp=True)
-        Create Directory? [Y/n]:
-        True
-        >>> confirm(prompt='Create Directory?', resp=False)
-        Create Directory? [y/N]:
-        False
-        >>> confirm(prompt='Create Directory?', resp=False)
-        Create Directory? [y/N]: y
-        True
-
-        '''
-
-        if prompt is None:
-            prompt = 'Confirm'
-
-        if resp:
-            prompt = '%s [%s/%s]: ' % (prompt, 'Y', 'n')
-        else:
-            prompt = '%s [%s/%s]: ' % (prompt, 'y', 'N')
-
-        while True:
-            ans = raw_input(prompt)
-            if not ans:
-                return resp
-            if ans not in ['y', 'Y', 'n', 'N']:
-                print 'Please enter y or n.'
-                continue
-            if ans == 'y' or ans == 'Y':
-                return True
-            if ans == 'n' or ans == 'N':
-                return False
-
-
 class SandboxVagrant(Vagrant):
     '''
     Support for sandbox mode using the Sahara gem (https://github.com/jedi4ever/sahara).
