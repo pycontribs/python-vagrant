@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from nose.tools import eq_, with_setup
 
 import vagrant
@@ -260,7 +261,6 @@ def test_vm_sandbox_mode():
     '''
     # Only test Sahara if it is installed.
     # This leaves the testing of Sahara to people who care.
-    # These tests are broken?  Does SandboxVagrant work?
     sahara_installed = _plugin_installed(vagrant.Vagrant(TD), 'sahara')
     if not sahara_installed:
         return
@@ -268,28 +268,28 @@ def test_vm_sandbox_mode():
     v = vagrant.SandboxVagrant(TD)
 
     sandbox_status = v.sandbox_status()
-    assert "unknown" in v.status().values(), "Before the VM goes up the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "unknown", "Before the VM goes up the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
     v.up()
     sandbox_status = v.sandbox_status()
-    assert "off" in v.status().values(), "After the VM goes up the status should be 'off', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "off", "After the VM goes up the status should be 'off', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_on()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After enabling the sandbox mode the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After enabling the sandbox mode the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_off()
     sandbox_status = v.sandbox_status()
-    assert "off" in v.status().values(), "After disabling the sandbox mode the status should be 'off', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "off", "After disabling the sandbox mode the status should be 'off', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_on()
     v.halt()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After halting the VM the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After halting the VM the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     v.up()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     test_file_contents = _read_test_file(v)
     print test_file_contents
@@ -301,6 +301,8 @@ def test_vm_sandbox_mode():
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
 
     v.sandbox_rollback()
+    time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
+
     test_file_contents = _read_test_file(v)
     print test_file_contents
     eq_(test_file_contents, None, "There should be no test file")
@@ -316,6 +318,8 @@ def test_vm_sandbox_mode():
     eq_(test_file_contents, "bar", "The test file should read 'bar'")
 
     v.sandbox_rollback()
+    time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
+
     test_file_contents = _read_test_file(v)
     print test_file_contents
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
@@ -327,7 +331,7 @@ def test_vm_sandbox_mode():
 
     v.destroy()
     sandbox_status = v.sandbox_status()
-    assert "unknown" in v.status().values(), "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "unknown", "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
 
 @with_setup(setup_vm, teardown_vm)
