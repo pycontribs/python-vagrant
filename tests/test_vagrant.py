@@ -471,8 +471,13 @@ def _execute_command_in_vm(v, command):
     Run command via ssh on the test vagrant box.  Returns a tuple of the
     return code and output of the command.
     '''
+    vagrant_exe = vagrant.get_vagrant_executable()
+
+    if not vagrant_exe:
+        raise RuntimeError(vagrant.VAGRANT_NOT_FOUND_WARNING)
+
     # ignore the fact that this host is not in our known hosts
-    ssh_command = [vagrant.VAGRANT_EXE, 'ssh', '-c', command]
+    ssh_command = [vagrant_exe, 'ssh', '-c', command]
     return subprocess.check_output(ssh_command, cwd=v.root)
 
 
