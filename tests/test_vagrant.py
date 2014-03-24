@@ -268,28 +268,28 @@ def test_vm_sandbox_mode():
     v = vagrant.SandboxVagrant(TD)
 
     sandbox_status = v.sandbox_status()
-    assert "unknown" in v.status().values(), "Before the VM goes up the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "unknown", "Before the VM goes up the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
     v.up()
     sandbox_status = v.sandbox_status()
-    assert "off" in v.status().values(), "After the VM goes up the status should be 'off', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "off", "After the VM goes up the status should be 'off', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_on()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After enabling the sandbox mode the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After enabling the sandbox mode the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_off()
     sandbox_status = v.sandbox_status()
-    assert "off" in v.status().values(), "After disabling the sandbox mode the status should be 'off', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "off", "After disabling the sandbox mode the status should be 'off', " + "got:'{}'".format(sandbox_status)
 
     v.sandbox_on()
     v.halt()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After halting the VM the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After halting the VM the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     v.up()
     sandbox_status = v.sandbox_status()
-    assert "on" in v.status().values(), "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "on", "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     test_file_contents = _read_test_file(v)
     print test_file_contents
@@ -327,7 +327,7 @@ def test_vm_sandbox_mode():
 
     v.destroy()
     sandbox_status = v.sandbox_status()
-    assert "unknown" in v.status().values(), "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
+    assert sandbox_status == "unknown", "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
 
 @with_setup(setup_vm, teardown_vm)
