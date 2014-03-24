@@ -1,0 +1,6 @@
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "python-vagrant-base"
+  # test v.provision()
+  config.vm.provision :shell, :inline => "echo 'foo' > /home/vagrant/python_vagrant_test_file"
+end

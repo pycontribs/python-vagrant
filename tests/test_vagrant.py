@@ -40,6 +40,9 @@ MULTIVM_VAGRANTFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'vagrantfiles', 'multivm_Vagrantfile')
 VM_VAGRANTFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'vagrantfiles', 'vm_Vagrantfile')
+SHELL_PROVISION_VAGRANTFILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'vagrantfiles', 'shell_provision_Vagrantfile')
 # the names of the vms from the multi-vm Vagrantfile.
 VM_1 = 'web'
 VM_2 = 'db'
@@ -49,6 +52,7 @@ TEST_BOX_NAME = "python-vagrant-base"
 TEST_BOX_URL = "http://files.vagrantup.com/lucid32.box"
 # temp dir for testing.
 TD = None
+
 
 
 def list_boxes():
@@ -117,35 +121,29 @@ def teardown():
 
 # TEST-LEVEL SETUP AND TEARDOWN
 
+def make_setup_vm(vagrantfile=None):
+    '''
+    Make and return a function that sets up the temporary directory with a
+    Vagrantfile.  By default, use VM_VAGRANTFILE.
+    vagrantfile: path to a vagrantfile to use as Vagrantfile in the testing temporary directory.
+    '''
+    if vagrantfile is None:
+        vagrantfile = VM_VAGRANTFILE
 
-def setup_vm():
-    shutil.copy(VM_VAGRANTFILE, os.path.join(TD, 'Vagrantfile'))
+    def setup_vm():
+        shutil.copy(vagrantfile, os.path.join(TD, 'Vagrantfile'))
+
+    return setup_vm
+
 
 def teardown_vm():
     '''
-    Destroys the VM after each test method.
-    It is not an error if the VM has already been destroyed.
+    Attempts to destroy every VM in the Vagrantfile in the temporary directory, TD.
+    It is not an error if a VM has already been destroyed.
     '''
     try:
-        subprocess.check_call(
-            'vagrant destroy -f'.format(TEST_BOX_NAME),
-            cwd=TD, shell=True)
-    except subprocess.CalledProcessError:
-        pass
-    finally:
-        # remove Vagrantfile created by setup 'vagrant init' command.
-        os.unlink(os.path.join(TD, "Vagrantfile"))
-
-
-def setup_multivm():
-    shutil.copy(MULTIVM_VAGRANTFILE, os.path.join(TD, 'Vagrantfile'))
-
-
-def teardown_multivm():
-    try:
         # Try to destroy any vagrant box that might be running.
-        subprocess.check_call('vagrant destroy -f',
-                              cwd=TD, shell=True)
+        subprocess.check_call('vagrant destroy -f', cwd=TD, shell=True)
     except subprocess.CalledProcessError:
         pass
     finally:
@@ -153,7 +151,8 @@ def teardown_multivm():
         os.unlink(os.path.join(TD, "Vagrantfile"))
 
 
-@with_setup(setup_vm, teardown_vm)
+
+@with_setup(make_setup_vm(), teardown_vm)
 def test_plugin_list_parsing():
     '''
     Test the parsing the output of the `vagrant plugin list` command.
@@ -169,7 +168,7 @@ vagrant-login (1.0.1, system)
     assert goal == parsed, 'The parsing of the test listing did not match the goal.\nlisting={!r}\ngoal={!r}\nparsed_listing={!r}'.format(listing, goal, parsed)
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(), teardown_vm)
 def test_vm_status():
     '''
     Test whether vagrant.status() correctly reports state of the VM.
@@ -189,7 +188,7 @@ def test_vm_status():
     assert v.NOT_CREATED in v.status().values(), "After destroying status should be vagrant.NOT_CREATED"
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(), teardown_vm)
 def test_vm_lifecycle():
     '''
     Test methods controlling the VM - init(), up(), halt(), destroy().
@@ -215,7 +214,7 @@ def test_vm_lifecycle():
     assert v.NOT_CREATED in v.status().values()
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(), teardown_vm)
 def test_vm_config():
     '''
     Test methods retrieving ssh config settings, like user, hostname, and port.
@@ -251,7 +250,7 @@ def test_vm_config():
     eq_(keyfile, parsed_config["IdentityFile"])
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(), teardown_vm)
 def test_vm_sandbox_mode():
     '''
     Test methods for enabling/disabling the sandbox mode
@@ -334,7 +333,7 @@ def test_vm_sandbox_mode():
     assert sandbox_status == "unknown", "After destroying the VM the status should be 'unknown', " + "got:'{}'".format(sandbox_status)
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(), teardown_vm)
 def test_boxes():
     '''
     Test methods for manipulating boxes - adding, listing, removing.
@@ -381,7 +380,7 @@ def test_boxes():
         "There should be no dummy box after it's been deleted")
 
 
-@with_setup(setup_vm, teardown_vm)
+@with_setup(make_setup_vm(SHELL_PROVISION_VAGRANTFILE), teardown_vm)
 def test_provisioning():
     '''
     Test provisioning support.  The tested provision config creates a file on
@@ -399,7 +398,7 @@ def test_provisioning():
     eq_(test_file_contents, "foo", "The test file should contain 'foo'")
 
 
-@with_setup(setup_multivm, teardown_multivm)
+@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
 def test_multivm_lifecycle():
     v = vagrant.Vagrant(TD)
 
@@ -434,12 +433,12 @@ def test_multivm_lifecycle():
     eq_(v.status()[VM_2], v.NOT_CREATED)
 
 
-@with_setup(setup_multivm, teardown_multivm)
+@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
 def test_multivm_config():
     '''
     Test methods retrieving configuration settings.
     '''
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(TD, quiet_stdout=False, quiet_stderr=False)
     v.up(vm_name=VM_1)
     command = "vagrant ssh-config " + VM_1
     ssh_config = subprocess.check_output(command, cwd=TD, shell=True)
