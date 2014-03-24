@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from nose.tools import eq_, with_setup
 
 import vagrant
@@ -260,7 +261,6 @@ def test_vm_sandbox_mode():
     '''
     # Only test Sahara if it is installed.
     # This leaves the testing of Sahara to people who care.
-    # These tests are broken?  Does SandboxVagrant work?
     sahara_installed = _plugin_installed(vagrant.Vagrant(TD), 'sahara')
     if not sahara_installed:
         return
@@ -301,6 +301,8 @@ def test_vm_sandbox_mode():
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
 
     v.sandbox_rollback()
+    time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
+
     test_file_contents = _read_test_file(v)
     print test_file_contents
     eq_(test_file_contents, None, "There should be no test file")
@@ -316,6 +318,8 @@ def test_vm_sandbox_mode():
     eq_(test_file_contents, "bar", "The test file should read 'bar'")
 
     v.sandbox_rollback()
+    time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
+
     test_file_contents = _read_test_file(v)
     print test_file_contents
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
