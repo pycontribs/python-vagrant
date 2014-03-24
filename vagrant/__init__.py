@@ -35,11 +35,16 @@ import os
 import re
 import subprocess
 import sys
+import logging
 
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
 __version__ = '0.4.5'
+log = logging.getLogger(__name__)
+
+VAGRANT_NOT_FOUND_WARNING = 'The Vagrant executable cannot be found. ' \
+                            'Please check if it is in the system path.'
 
 
 def which(program):
@@ -99,9 +104,12 @@ def which(program):
 
 
 # The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
-VAGRANT_EXE = which('vagrant')
-assert VAGRANT_EXE, ('The Vagrant executable cannot be found. ' +
-                     'Please check if it is in the system path.')
+def get_vagrant_executable():
+    return which('vagrant')
+
+
+if get_vagrant_executable() is None:
+    log.warn(VAGRANT_NOT_FOUND_WARNING)
 
 
 class Vagrant(object):
@@ -617,10 +625,15 @@ class Vagrant(object):
         - quiet_stderr:  If True, the stderr of the vagrant command will be
           sent to devnull.
         '''
+        vagrant_exe = get_vagrant_executable()
+
+        if not vagrant_exe:
+            raise RuntimeError(VAGRANT_NOT_FOUND_WARNING)
+
         # filter out None args.  Since vm_name is None in non-Multi-VM
         # environments, this quitely removes it from the arguments list
         # when it is not specified.
-        command = [VAGRANT_EXE] + [arg for arg in args if arg is not None]
+        command = [vagrant_exe] + [arg for arg in args if arg is not None]
 
         # Suppress stderr if quiet_stderr is True
         if kwargs.get('quiet_stderr', False):
