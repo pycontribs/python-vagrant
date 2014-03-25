@@ -4,6 +4,88 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.0 (release 2014/03/25)
+
+This is a backwards-incompatible release with a number of breaking changes to
+the API.  Some of these changes were made to bring the python-vagrant API more
+closely in line with the vagrant CLI, a key design goal of python-vagrant.
+Other changes simplify the code.  This release also includes a number of pull
+requests.
+
+Major (backwards-incompatible) changes:
+
+- Fix inconsistencies between python-vagrant and the vagrant CLI.
+
+  A goal of the design of methods like `status()`, `box_list()`, and
+  `plugin_list()` is to be a thin wrapper around the corresponding vagrant CLI
+  commands, with a very similar API.  These changes bring python-vagrant closer
+  to that goal, I hope.
+
+  When status() was originally written, it was with single-VM environments
+  in mind, before provider information was available.  Since then it was
+  altered to return a dict to handle multi-VM environments.  However it
+  still did not return the provider information vagrant outputs.  This
+  command updates the status API so that it returns every tuple of VM name
+  (i.e. target), state (i.e. status), and provider output by the
+  underlying vagrant command.  These tuples of values are returned as a
+  list of Status classes.  The decision to return a list of Statuses
+  instead of a dict mapping VM name to Status was made because the vagrant
+  CLI does not make clear that the status information it returns can be
+  keyed on VM name.  In the case of `vagrant box list`, box names can be
+  repeated if there are multiple version of boxes.  Therefore, returning a
+  list of Statuses seemed more consistent with (my understanding of)
+  vagrant's API.
+
+  The box_list() method was originally written, as I recall, before
+  providers and versions were a part of Vagrant.  Then box_list_long() was
+  written to accommodate provider information, without changing the
+  box_list() API.  Unfortunately, this meant box_list() diverged more from
+  the output of `vagrant box list`.  To bring the python-vagrant API back
+  in line with the vagrant API, while keeping it simple, the
+  box_list_long() method is being removed and the box_list() method is
+  being updated to return a list of Box instances.  Each box instance
+  contains the information that the `vagrant box list` command returns for
+  a box, the box name, provider, and version.  The user who wants a list
+  of box names can do:
+
+      [box.name for box in v.box_list()]
+
+  For consistency with status() and box_list(), the relatively new
+  plugin_list() command is updated to return a list of Plugin objects
+  instead of a list of dicts containing the plugin info from vagrant.
+
+  The choice to use classes for Status, Box, and Plugin information was
+  motivated by the lower syntactic weight compared to using a dicts.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+- Pull Request #22.  Don't die if vagrant executable is missing when the vagrant module is imported.  Wait until the Vagrant class is used.
+  Author: Gertjan Oude Lohuis (https://github.com/gertjanol)
+- Move verbosity/quiet flags from `**kwargs` to instance vars.
+
+  Unfortunately, this is a breaking change for people who use these keywords.
+  Nevertheless, the proliferation of `**kwargs` in the method signatures is a bad
+  smell.  The code is not self documenting.  It is not clear from the code what
+  keywords you can pass, and it will accept keywords it does not use.  Also, as
+  new methods are added, their signatures must be polluted either by the vague
+  `**kwargs` or a host of seemingly irrelevant keywords, like capture_output and
+  quiet_stderr.        Moving the verbosity and quietness functions to instance
+  variables from   function parameters makes their functionality more well
+  documented,   simplifies and makes more explicit  many method signatures, and
+  maintains the desired functionality.
+
+  For a "loud" instance, use vagrant.Vagrant(quiet_stdout=False).  Set quiet_stderr=False for an even louder version.
+
+  In keeping with past behavior, vagrant instances are quiet by default.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+
+Other minor changes and fixes:
+
+- Pull Request #21.  Fix Sandbox Tests
+  Author: Gertjan Oude Lohuis (https://github.com/gertjanol)
+- Split internal _run_vagrant_command method into _run_vagrant_command (for capturing output) and _call_vagrant_command (when output is not needed, e.g. for parsing).
+  Author: Todd DeLuca (https://github.com/todddeluca)
+- Fix provisioning test.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+
 ## 0.4.5 (released 2014/03/22)
 
 - Add a 'quiet_stderr' keyword to silence the stderr output of vagrant commands.

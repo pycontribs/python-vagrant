@@ -4,25 +4,28 @@ Python-vagrant is a python module that provides a _thin_ wrapper around the
 `vagrant` command line executable, allowing programmatic control of Vagrant
 virtual machines (boxes).  This module is useful for:
 
-- Starting a Vagrant box (`up`).
-- Terminating a Vagrant box (`destroy`).
-- Halting a Vagrant box without destroying it (`halt`).
-- Querying the status of a box (`status`).
-- Getting ssh configuration information useful for SSHing into the box. (`host`, `port`, ...)
+- Starting a Vagrant virtual machine (VM) (`up`).
+- Terminating a Vagrant VM (`destroy`).
+- Halting a Vagrant VM without destroying it (`halt`).
+- Querying the status of a VM or VMs (`status`).
+- Getting ssh configuration information useful for SSHing into the VM. (`host`, `port`, ...)
 - Running `vagrant` commands in a multi-VM environment
   (http://vagrantup.com/v1/docs/multivm.html) by using `vm_name` parameter.
 - Initializing the VM based on a named base box, using init().
 - Adding, Removing, and Listing boxes (`box add`, `box remove`, `box list`).
-- Provisioning - up() accepts no_provision and there is a provision() method.
+- Provisioning VMs - up() accepts options like `no_provision`, `provision`, and `provision_with`, and there is a `provision()` method.
 - Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 
-This package is _alpha_ and its API is not guaranteed to be stable.  The API
-attempts to be congruent with the `vagrant` API terminology, to facilitate
-knowledge transfer for users already familiar with Vagrant.
 
-I wanted python bindings for Vagrant so I could programmatically access my
-vagrant box using Fabric.  Drop me a line to let me know how you use
-python-vagrant.  -Todd DeLuca
+This package is _beta_ and its API is not guaranteed to be stable.  The API
+attempts to be congruent with the `vagrant` API terminology, to facilitate
+knowledge transfer for users already familiar with Vagrant.  Over time, the
+python-vagrant API has changed to better match the underling `vagrant` CLI and
+to evolve with the changes in that CLI.
+
+This project begain because I wanted python bindings for Vagrant so I could
+programmatically access my vagrant box using Fabric.  Drop me a line to let me
+know how you use python-vagrant.  I'd love to share more use cases.  -Todd DeLuca
 
 
 ## Contribute
@@ -42,7 +45,10 @@ and make sure any existing tests still work.  One can test with:
 
 ## Requirements
 
-- Vagrant 1.1 or greater (Currently tested with 1.1.5).
+
+
+- Vagrant 1.1 or greater (urrently tested with 1.5).  Using the latest version
+  of Vagrant is strongly recommended.
 - Vagrant requires VirtualBox (e.g. VirtualBox 4.2.10) or another provider.
 - Python 2.7 (the only version this package has been tested with.)
 - The Sahara gem for Vagrant is optional.  It will allow you to use

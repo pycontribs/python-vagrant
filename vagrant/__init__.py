@@ -6,29 +6,8 @@ with the `vagrant` CLI without the boilerplate (and errors) of calling
 The API attempts to conform closely to the API of the `vagrant` command line,
 including method names and parameter names.
 
-Quick and dirty test to up, look at, and destroy (!) a Vagrant box.  Run from
-the directory holding your Vagrantfile.
-
-python -c 'import vagrant
-v = vagrant.Vagrant()
-v.up()
-print v.status()
-print v.user()
-print v.hostname()
-print v.port()
-print v.keyfile()
-print v.user_hostname()
-print v.user_hostname_port()
-print v.conf()
-v.destroy();
-'
-
-For unit tests, see tests/test_vagrant.py
-
-Dependencies:
-
-- `vagrant` should be installed and in your PATH.
-
+Documentation of usage, testing, installation, etc., can be found at
+https://github.com/todddeluca/python-vagrant.
 '''
 
 import collections
@@ -41,8 +20,11 @@ import logging
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.4.5'
+__version__ = '0.5.0'
+
+
 log = logging.getLogger(__name__)
+
 
 VAGRANT_NOT_FOUND_WARNING = 'The Vagrant executable cannot be found. ' \
                             'Please check if it is in the system path.'
