@@ -16,6 +16,12 @@ virtual machines (boxes).  This module is useful for:
 - Provisioning VMs - up() accepts options like `no_provision`, `provision`, and `provision_with`, and there is a `provision()` method.
 - Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 
+This project begain because I wanted python bindings for Vagrant so I could
+programmatically access my vagrant box using Fabric.  Drop me a line to let me
+know how you use python-vagrant.  I'd love to share more use cases.  -Todd DeLuca
+
+
+## Versioning and API Stability
 
 This package is _beta_ and its API is not guaranteed to be stable.  The API
 attempts to be congruent with the `vagrant` API terminology, to facilitate
@@ -23,9 +29,10 @@ knowledge transfer for users already familiar with Vagrant.  Over time, the
 python-vagrant API has changed to better match the underling `vagrant` CLI and
 to evolve with the changes in that CLI.
 
-This project begain because I wanted python bindings for Vagrant so I could
-programmatically access my vagrant box using Fabric.  Drop me a line to let me
-know how you use python-vagrant.  I'd love to share more use cases.  -Todd DeLuca
+The package version numbering is in the form `0.X.Y`.  The initial `0` reflects
+the _beta_ nature of this project.  The number `X` is incremented when
+backwards-incompatible changes occur.  The number `Y` is incremented when
+backwards-compatible features or bug fixes are added.
 
 
 ## Contribute
