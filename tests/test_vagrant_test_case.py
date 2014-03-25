@@ -32,7 +32,8 @@ class SingleBoxTests(VagrantTestCase):
 
     def test_box_up(self):
         """Tests that the box starts as expected"""
-        self.assertEqual(self.vagrant.status()[self.vagrant_boxes[0]], Vagrant.RUNNING)
+        state = self.vagrant.status(vm_name=self.vagrant_boxes[0])[0].state
+        self.assertEqual(state, Vagrant.RUNNING)
 
 
 class SpecificMultiBoxTests(VagrantTestCase):
@@ -44,11 +45,12 @@ class SpecificMultiBoxTests(VagrantTestCase):
     def test_all_boxes_up(self):
         """Tests that all boxes listed are up after starting"""
         for box_name in self.vagrant_boxes:
-            self.assertEqual(self.vagrant.status()[box_name], Vagrant.RUNNING)
+            state = self.vagrant.status(vm_name=box_name)[0].state
+            self.assertEqual(state, Vagrant.RUNNING)
 
     def test_unlisted_boxes_ignored(self):
         """Tests that the boxes not listed are not brought up"""
-        for box_name in self.vagrant.status().keys():
+        for box_name in [s.name for s in self.vagrant.status()]:
             if box_name in self.vagrant_boxes:
                 self.assertBoxUp(box_name)
             else:

@@ -31,6 +31,7 @@ Dependencies:
 
 '''
 
+import collections
 import os
 import re
 import subprocess
@@ -112,6 +113,12 @@ if get_vagrant_executable() is None:
     log.warn(VAGRANT_NOT_FOUND_WARNING)
 
 
+# Classes for listings of Statuses, Boxes, and Plugins
+Status = collections.namedtuple('Status', ['name', 'state', 'provider'])
+Box = collections.namedtuple('Box', ['name', 'provider', 'version'])
+Plugin = collections.namedtuple('Plugin', ['name', 'version', 'system'])
+
+
 class Vagrant(object):
     '''
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
@@ -120,14 +127,12 @@ class Vagrant(object):
 
     Works by using the `vagrant` executable and a `Vagrantfile`.
     '''
-
     # statuses
     RUNNING = 'running'  # vagrant up
     NOT_CREATED = 'not created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
     ABORTED = 'aborted'  # The VM is in an aborted state
     SAVED = 'saved' # vagrant suspend
-
     # LXC statuses
     STOPPED = 'stopped'
     FROZEN = 'frozen'
@@ -275,12 +280,28 @@ class Vagrant(object):
 
     def status(self, vm_name=None):
         '''
-        Returns a dictionary mapping Vagrant box names to statuses.  Statuses
-        are RUNNING, POWEROFF, SAVED and NOT_CREATED, corresponding to vagrant
-        up, halt, suspend, and destroy, respectively.
+        Return the results of a `vagrant status` call as a list of one or more
+        Status objects.  A Status contains the following attributes:
 
-        In a single-VM environment or when the vm_name parameter is used in
-        a multi-VM environment, a status string is returned:
+        - name: The VM name in a multi-vm environment.  'default' otherwise.
+        - state: The state of the underlying guest machine (i.e. VM).
+        - provider: the name of the VM provider, e.g. 'virtualbox'.  None
+          if no provider is output by vagrant.
+
+        This information corresponds with the current return values from running
+        `vagrant status`, as of Vagrant 1.5.
+
+        Example return values for a multi-VM environment:
+
+            [Status(name='web', state='not created', provider='virtualbox'),
+             Status(name='db', state='not created', provider='virtualbox')]
+
+        And for a single-VM environment:
+
+            [Status(name='default', state='not created', provider='virtualbox')]
+
+        Possible states include, but are not limited to (since new states are
+        being added as Vagrant evolves):
 
         - 'not created' if the vm is destroyed
         - 'running' if the vm is up
@@ -293,33 +314,35 @@ class Vagrant(object):
         virtualbox and vmware_fusion) and has started adding the provider in
         the status string, like 'not created (virtualbox)'.
 
-        There might be other statuses, but the Vagrant docs were unclear.
+        Implementation notes:
 
-        When vm_name is not given in a multi-VM environment a dictionary
-        mapping vm names to statuses will be returned.
+        - The human-readable output of vagrant lists the vm name as 'default'
+          in a single vm environment.  This is in contrast to the
+          Machine-readable output from vagrant, which lists the vm name
+          (a.k.a. target) as '' in a single VM environment.
+        - The human readable states differ from machine readable states.  For
+          example, 'not created' versus 'not_created'.  In order to future-proof
+          code using python-vagrant, use the status constants defined in the
+          Vagrant class instead of hardcoding the string.  At some point
+          parsing will switch from using the human-readable output to the
+          machine readable output and the state values might change as well.
         '''
-        # example output:
+        # example output (without provdier):
         # Current VM states:
         #
         # default                  poweroff
         #
         # The VM is powered off. To restart the VM, simply run `vagrant up`
 
-        # example multi-VM environment output:
-        # Current VM states:
+        # example multi-VM environment output (with provider):
+        # Current machine states:
         #
-        # web                      running
-        # db                       running
+        # web                       not created (virtualbox)
+        # db                        not created (virtualbox)
         #
         # This environment represents multiple VMs. The VMs are all listed
         # above with their current state. For more information about a specific
         # VM, run `vagrant status NAME`.
-
-        # Example status lines, showing the vm name, status, and provider.
-        # default                  not created (virtualbox)
-        # default                  saved (virtualbox)
-        # default                  running (virtualbox)
-        # default                  poweroff (virtualbox)
 
         output = self._run_vagrant_command(['status', vm_name])
         # The format of output is expected to be a
@@ -327,25 +350,35 @@ class Vagrant(object):
         #   - "Current machine states" line (vagrant 1.1)
         # followed by a blank line, followed by one or more status lines,
         # followed by a blank line.
-        statuses = {}
-        state = 1 # looking for for the 'Current ... states' line
-        for line in output.splitlines():
 
-            if state == 1 and re.search('^Current (VM|machine) states:', line.strip()):
-                state = 2 # looking for the blank line
-            elif state == 2 and not line.strip():
-                state = 3 # looking for machine status lines
-            elif state == 3 and line.strip():
-                vm_name_and_status, provider = self._parse_provider_line(line)
-                # Split vm_name from status.  Only works for recognized statuses.
-                m = re.search(r'^(?P<vm_name>.*?)\s+(?P<status>' +
+        # Parsing the output of `vagrant status`
+        # Currently parsing is constrained to known states.  Otherwise how
+        # could we know where the VM name ends and the state begins.
+        # Once --machine-readable output is stable (a work in progress as of
+        # Vagrant 1.5), this constraint can be lifted.
+        START_LINE, FIRST_BLANK, VM_STATUS = 1, 2, 3
+        statuses = []
+        parse_state = START_LINE # looking for for the 'Current ... states' line
+        for line in output.splitlines():
+            line = line.strip()
+            if parse_state == START_LINE and re.search('^Current (VM|machine) states:', line):
+                parse_state = FIRST_BLANK # looking for the first blank line
+            elif parse_state == FIRST_BLANK and not line:
+                parse_state = VM_STATUS # looking for machine status lines
+            elif parse_state == VM_STATUS and line:
+                vm_name_and_state, provider = self._parse_provider_line(line)
+                # Split vm_name from status.  Only works for recognized states.
+                m = re.search(r'^(?P<vm_name>.*?)\s+(?P<state>' +
                               '|'.join(self.STATUSES) + ')$',
-                              vm_name_and_status)
+                              vm_name_and_state)
                 if not m:
-                    raise Exception('ParseError: Failed to properly parse vm name and status from line.', line, output)
+                    raise Exception('ParseError: Failed to properly parse vm name and status from line.',
+                                    line, output)
                 else:
-                    statuses[m.group('vm_name')] = m.group('status')
-            elif state == 3 and not line.strip():
+                    status = Status(m.group('vm_name'), m.group('state'), provider)
+                    statuses.append(status)
+            elif parse_state == VM_STATUS and not line:
+                # Found the second blank line.  All done.
                 break
 
         return statuses
@@ -493,26 +526,33 @@ class Vagrant(object):
 
     def box_list(self):
         '''
-        Returns a list of all available box names.  For example:
+        Run `vagrant box list` and return a list of Box objects containing the
+        results.  A Box object has the following attributes:
 
-            ['precise32', 'precise64']
-        '''
-        return [name for name, provider in self.box_list_long()]
+        - name: the box-name.
+        - provider: the box-provider.
+        - version: the box-version.
 
-    def box_list_long(self):
-        '''
-        Returns a list of all available boxes as tuples containing the box
-        name and provider.  For example:
+        Example output:
 
-            [('precise32', 'virtualbox'), ('precise64', 'virtualbox')]
+            [Box(name='precise32', provider='virtualbox', version=None),
+             Box(name='precise64', provider='virtualbox', version=None),
+             Box(name='trusty64', provider='virtualbox', version=None)]
 
-        As of Vagrant >= 1.1, boxes are listed with names and providers.
+        Implementation Notes:
+
+        - The box-version is not currently returned, since we parse the
+          human-readable vagrant output, where it is not listed.  As of Vagrant
+          1.5 (or 1.4?) is is available in the --machine-readable output.
+          Once parsing is switched to use that output, it will be available.
+        - As of Vagrant >= 1.1, boxes are listed with names and providers.
         '''
         output = self._run_vagrant_command(['box', 'list'])
         boxes = []
         for line in output.splitlines():
             name, provider = self._parse_provider_line(line)
-            boxes.append((name, provider))
+            box = Box(name, provider, version=None) # not currently parsing the box version
+            boxes.append(box)
         return boxes
 
     def box_remove(self, name, provider):
@@ -524,12 +564,20 @@ class Vagrant(object):
 
     def plugin_list(self):
         '''
-        Return a list of dicts containing the following information about
-        installed plugins:
-        - 'name': The plugin name, as a string.
-        - 'version': The plugin version, as a string.
-        - 'system': A boolean, presumably indicating whether this plugin is a
-          "core" part of vagrant, though the feature is undocumented.
+        Return a list of Plugin objects containing the following information
+        about installed plugins:
+
+        - name: The plugin name, as a string.
+        - version: The plugin version, as a string.
+        - system: A boolean, presumably indicating whether this plugin is a
+          "core" part of vagrant, though the feature is not yet documented
+          in the Vagrant 1.5 docs.
+
+        Example output:
+
+            [Plugin(name='sahara', version='0.0.16', system=False),
+             Plugin(name='vagrant-login', version='1.0.1', system=True),
+             Plugin(name='vagrant-share', version='1.0.1', system=True)]
         '''
         output = self._run_vagrant_command(['plugin', 'list'])
         return [self._parse_plugin_list_line(l) for l in output.splitlines()]
@@ -546,9 +594,7 @@ class Vagrant(object):
         if m is None:
             raise Exception('Error parsing plugin listing line.', line)
         else:
-            listing = m.groupdict()
-            listing['system'] = bool(listing['system'])
-            return listing
+            return Plugin(m.group('name'), m.group('version'), bool(m.group('system')))
 
     def _parse_provider_line(self, line):
         '''

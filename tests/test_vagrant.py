@@ -161,8 +161,8 @@ def test_plugin_list_parsing():
     listing = '''sahara (0.0.16)
 vagrant-login (1.0.1, system)
 '''
-    goal = [{'name': 'sahara', 'version': '0.0.16', 'system': False},
-            {'name': 'vagrant-login', 'version': '1.0.1', 'system': True}]
+    # Can compare tuples to Plugin class b/c Plugin is a collections.namedtuple.
+    goal = [('sahara', '0.0.16', False), ('vagrant-login', '1.0.1', True)]
     v = vagrant.Vagrant(TD)
     parsed = [v._parse_plugin_list_line(l) for l in listing.splitlines()]
     assert goal == parsed, 'The parsing of the test listing did not match the goal.\nlisting={!r}\ngoal={!r}\nparsed_listing={!r}'.format(listing, goal, parsed)
@@ -171,21 +171,22 @@ vagrant-login (1.0.1, system)
 @with_setup(make_setup_vm(), teardown_vm)
 def test_vm_status():
     '''
-    Test whether vagrant.status() correctly reports state of the VM.
+    Test whether vagrant.status() correctly reports state of the VM, in a
+    single-VM environment.
     '''
     v = vagrant.Vagrant(TD)
-    assert v.NOT_CREATED in v.status().values(), "Before going up status should be vagrant.NOT_CREATED"
+    assert v.NOT_CREATED == v.status()[0].state, "Before going up status should be vagrant.NOT_CREATED"
     command = 'vagrant up'
     subprocess.check_call(command, cwd=TD, shell=True)
-    assert v.RUNNING in v.status().values(), "After going up status should be vagrant.RUNNING"
+    assert v.RUNNING in v.status()[0].state, "After going up status should be vagrant.RUNNING"
 
     command = 'vagrant halt'
     subprocess.check_call(command, cwd=TD, shell=True)
-    assert v.POWEROFF in v.status().values(), "After halting status should be vagrant.POWEROFF"
+    assert v.POWEROFF in v.status()[0].state, "After halting status should be vagrant.POWEROFF"
 
     command = 'vagrant destroy -f'
     subprocess.check_call(command, cwd=TD, shell=True)
-    assert v.NOT_CREATED in v.status().values(), "After destroying status should be vagrant.NOT_CREATED"
+    assert v.NOT_CREATED in v.status()[0].state, "After destroying status should be vagrant.NOT_CREATED"
 
 
 @with_setup(make_setup_vm(), teardown_vm)
@@ -199,19 +200,19 @@ def test_vm_lifecycle():
     # Test init by removing Vagrantfile, since v.init() will create one.
     os.unlink(os.path.join(TD, 'Vagrantfile'))
     v.init(TEST_BOX_NAME)
-    assert v.NOT_CREATED in v.status().values()
+    assert v.NOT_CREATED == v.status()[0].state
 
     v.up()
-    assert v.RUNNING in v.status().values()
+    assert v.RUNNING == v.status()[0].state
 
     v.suspend()
-    assert v.SAVED in v.status().values()
+    assert v.SAVED == v.status()[0].state
 
     v.halt()
-    assert v.POWEROFF in v.status().values()
+    assert v.POWEROFF == v.status()[0].state
 
     v.destroy()
-    assert v.NOT_CREATED in v.status().values()
+    assert v.NOT_CREATED == v.status()[0].state
 
 
 @with_setup(make_setup_vm(), teardown_vm)
@@ -359,16 +360,9 @@ def test_boxes():
     eq_((box_name, provider) in boxes, True,
         "There should be a dummy box in the list of boxes")
 
-    # Test listing box names
-    box_names = list_box_names()
-    reported_box_names = v.box_list()
-    for box in box_names:
-        eq_(box in reported_box_names, True,
-            "The box '{}' should be in the list returned by box_list()".format(box))
-
-    # Test listing box names and providers
+    # Test listing boxes
     boxes = list_boxes()
-    reported_boxes = v.box_list_long()
+    reported_boxes = [(b.name, b.provider) for b in v.box_list()]
     for box in boxes:
         eq_(box in reported_boxes, True,
             "The box '{}' should be in the list returned by box_list()".format(box))
@@ -403,34 +397,33 @@ def test_multivm_lifecycle():
     v = vagrant.Vagrant(TD)
 
     # test getting multiple statuses at once
-    statuses = v.status()
-    eq_(statuses[VM_1], v.NOT_CREATED)
-    eq_(statuses[VM_2], v.NOT_CREATED)
+    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
+    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
 
     v.up(vm_name=VM_1)
-    eq_(v.status()[VM_1], v.RUNNING)
-    eq_(v.status()[VM_2], v.NOT_CREATED)
+    eq_(v.status(VM_1)[0].state, v.RUNNING)
+    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
 
     # start both vms
     v.up()
-    eq_(v.status()[VM_1], v.RUNNING)
-    eq_(v.status()[VM_2], v.RUNNING)
+    eq_(v.status(VM_1)[0].state, v.RUNNING)
+    eq_(v.status(VM_2)[0].state, v.RUNNING)
 
     v.halt(vm_name=VM_1)
-    eq_(v.status()[VM_1], v.POWEROFF)
-    eq_(v.status()[VM_2], v.RUNNING)
+    eq_(v.status(VM_1)[0].state, v.POWEROFF)
+    eq_(v.status(VM_2)[0].state, v.RUNNING)
 
     v.destroy(vm_name=VM_1)
-    eq_(v.status()[VM_1], v.NOT_CREATED)
-    eq_(v.status()[VM_2], v.RUNNING)
+    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
+    eq_(v.status(VM_2)[0].state, v.RUNNING)
 
     v.suspend(vm_name=VM_2)
-    eq_(v.status()[VM_1], v.NOT_CREATED)
-    eq_(v.status()[VM_2], v.SAVED)
+    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
+    eq_(v.status(VM_2)[0].state, v.SAVED)
 
     v.destroy(vm_name=VM_2)
-    eq_(v.status()[VM_1], v.NOT_CREATED)
-    eq_(v.status()[VM_2], v.NOT_CREATED)
+    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
+    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
 
 
 @with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
@@ -507,4 +500,4 @@ def _read_test_file(v):
 
 def _plugin_installed(v, plugin_name):
     plugins = v.plugin_list()
-    return plugin_name in [plugin['name'] for plugin in plugins]
+    return plugin_name in [plugin.name for plugin in plugins]

@@ -33,7 +33,7 @@ class VagrantTestCase(TestCase):
 		"""Check that the vagrant_boxes attribute is not left empty, and is populated by all boxes if left blank"""
 		self.vagrant = Vagrant(self.vagrant_root)
 		if not self.vagrant_boxes:
-			boxes = self.vagrant.status().keys()
+			boxes = [s.name for s in self.vagrant.status()]
 			if len(boxes) == 1:
 				self.vagrant_boxes = ['default']
 			else:
@@ -42,7 +42,7 @@ class VagrantTestCase(TestCase):
 
 	def assertBoxStatus(self, box, status):
 		"""Assertion for a box status"""
-		box_status = self.vagrant.status()[box]
+		box_status = [s.state for s in self.vagrant.status() if s.name == box][0]
 		if box_status != status:
 			self.failureException('{} has status {}, not {}'.format(box, box_status, status))
 
@@ -72,7 +72,8 @@ class VagrantTestCase(TestCase):
 	def setUpOnce(self):
 		"""Collect the box states before starting"""
 		for box_name in self.vagrant_boxes:
-			self.__initial_box_statuses[box_name] = self.vagrant.status()[box_name]
+			box_state = [s.state for s in self.vagrant.status() if s.name == box_name][0]
+			self.__initial_box_statuses[box_name] = box_state
 
 	def tearDownOnce(self):
 		"""Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
