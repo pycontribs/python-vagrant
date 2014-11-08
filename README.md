@@ -114,3 +114,8 @@ Another example showing how to use vagrant multi-vm feature with fabric:
                      key_filename = v.keyfile(vm_name=machine_name),
                      disable_known_hosts = True):
             run("echo hello")
+
+By default python vagrant instances are quiet, meaning that they capture stdout
+and stderr.  For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
+Set `quiet_stderr=False` for an even louder version.
+
