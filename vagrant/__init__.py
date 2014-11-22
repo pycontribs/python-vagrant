@@ -88,7 +88,13 @@ def which(program):
 
 # The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
 def get_vagrant_executable():
-    return which('vagrant')
+    if (which('vagrant') is not None):
+        if (os.name == 'nt'):
+            return 'vagrant'
+        else:
+            return which('vagrant')
+    else:
+        return None
 
 
 if get_vagrant_executable() is None:
