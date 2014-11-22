@@ -46,11 +46,13 @@ def which(program):
 
     http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python/377028#377028
     https://github.com/webcoyote/vagrant/blob/f70507062e3b30c00db1f0d8b90f9245c4c997d4/lib/vagrant/util/file_util.rb
+    Python3.3+ implementation:
+    https://hg.python.org/cpython/file/default/Lib/shutil.py
     '''
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    # If program contains any dir components, do not search the path
+    # Shortcut: If program contains any dir components, do not search the path
     # e.g. './backup', '/bin/ls'
     if os.path.dirname(program):
         if is_exe(program):
@@ -58,28 +60,45 @@ def which(program):
         else:
             return None
 
-    # Only search PATH if there is one to search.
-    if 'PATH' not in os.environ:
-        return None
-
     # Are we on windows?
     # http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
     windows = (os.name == 'nt')
-    # Does program have an extension?
-    has_ext = os.path.splitext(program)[1]
-    if windows and not has_ext:
-        # If windows and no extension, search for program + ext for each
-        # extension in PATHEXT.  http://environmentvariables.org/PathExt
-        # e.g. ['.EXE', '.CMD', '.BAT']
-        exts = os.environ.get('PATHEXT', '').split(';')
-    else:
-        # Otherwise, just search for program
-        exts = ['']
 
+    # Paths
+    paths = os.environ.get('PATH', os.defpath) or []
+    # The current directory takes precedence on Windows.
+    if windows:
+        paths.insert(0, os.curdir)
+
+    # Only search PATH if there is one to search.
+    if not paths:
+        return None
+
+    # Extensions
+    if not windows:
+        exts = ['']
+    else:
+        if not os.curdir in paths:
+            paths.insert(0, os.curdir)
+
+        # windows path extensions in PATHEXT.
+        # http://environmentvariables.org/PathExt
+        # e.g. ['.EXE', '.CMD', '.BAT']
+        exts = os.environ.get('PATHEXT', '').split(os.pathsep)
+
+        # if the program ends with one of the extensions, only test that one.
+        # otherwise test all the extensions.
+        matching_exts = [ext for ext in exts if
+                         program.lower().endswith(ext.lower())]
+        if matching_exts:
+            exts = matching_exts
+
+    # Check each combination of path, program, and extension, returning
+    # the first combination that exists and is executable.
     programs = [program + ext for ext in exts]
-    for path in os.environ['PATH'].split(os.pathsep):
+    for path in paths:
         for p in programs:
-            fpath = os.path.join(path, p)
+            fpath = os.path.normcase(os.path.join(path, p))
             if is_exe(fpath):
                 return fpath
 
