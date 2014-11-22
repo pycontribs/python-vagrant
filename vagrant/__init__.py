@@ -64,8 +64,12 @@ def which(program):
     # http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
     windows = (os.name == 'nt')
 
-    # Paths
-    paths = os.environ.get('PATH', os.defpath) or []
+    # Paths: a list of directories
+    path_str = os.environ.get('PATH', os.defpath)
+    if not path_str:
+        paths = []
+    else:
+        paths = path_str.split(os.pathsep)
     # The current directory takes precedence on Windows.
     if windows:
         paths.insert(0, os.curdir)
@@ -74,13 +78,10 @@ def which(program):
     if not paths:
         return None
 
-    # Extensions
+    # files: add any necessary extensions to program
     if not windows:
-        exts = ['']
+        files = [program]
     else:
-        if not os.curdir in paths:
-            paths.insert(0, os.curdir)
-
         # windows path extensions in PATHEXT.
         # http://environmentvariables.org/PathExt
         # e.g. ['.EXE', '.CMD', '.BAT']
@@ -91,14 +92,15 @@ def which(program):
         matching_exts = [ext for ext in exts if
                          program.lower().endswith(ext.lower())]
         if matching_exts:
-            exts = matching_exts
+            files = [program + ext for ext in matching_exts]
+        else:
+            files = [program + ext for ext in exts]
 
     # Check each combination of path, program, and extension, returning
     # the first combination that exists and is executable.
-    programs = [program + ext for ext in exts]
     for path in paths:
-        for p in programs:
-            fpath = os.path.normcase(os.path.join(path, p))
+        for f in files:
+            fpath = os.path.normcase(os.path.join(path, f))
             if is_exe(fpath):
                 return fpath
 
