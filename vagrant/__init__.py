@@ -63,6 +63,9 @@ def which(program):
     # Are we on windows?
     # http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
     windows = (os.name == 'nt')
+    # Cygwin might not like .EXE extensions
+    # https://docs.python.org/2/library/sys.html#sys.platform
+    cygwin = sys.platform.startswith('cygwin')
 
     # Paths: a list of directories
     path_str = os.environ.get('PATH', os.defpath)
@@ -79,7 +82,8 @@ def which(program):
         return None
 
     # files: add any necessary extensions to program
-    if not windows:
+    # On cygwin and non-windows systems do not add extensions.
+    if cygwin or not windows:
         files = [program]
     else:
         # windows path extensions in PATHEXT.
