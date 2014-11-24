@@ -4,6 +4,12 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.1
+
+- Find the correct executable on Cygwin systems.  See `which` and
+  https://github.com/todddeluca/python-vagrant/issues/26.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+
 ## 0.5.0 (release 2014/03/25)
 
 This is a backwards-incompatible release with a number of breaking changes to

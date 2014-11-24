@@ -20,7 +20,7 @@ import logging
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 
 log = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def which(program):
     # Are we on windows?
     # http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
     windows = (os.name == 'nt')
-    # Cygwin might not like .EXE extensions
+    # Or cygwin?
     # https://docs.python.org/2/library/sys.html#sys.platform
     cygwin = sys.platform.startswith('cygwin')
 
@@ -81,14 +81,18 @@ def which(program):
     if not paths:
         return None
 
-    # files: add any necessary extensions to program
-    # On cygwin and non-windows systems do not add extensions.
+    # Files: add any necessary extensions to program
+    # On cygwin and non-windows systems do not add extensions when searching
+    # for the executable
     if cygwin or not windows:
         files = [program]
     else:
         # windows path extensions in PATHEXT.
-        # http://environmentvariables.org/PathExt
         # e.g. ['.EXE', '.CMD', '.BAT']
+        # http://environmentvariables.org/PathExt
+        # This might not properly use extensions that have been "registered" in
+        # Windows. In the future it might make sense to use one of the many
+        # "which" packages on PyPI.
         exts = os.environ.get('PATHEXT', '').split(os.pathsep)
 
         # if the program ends with one of the extensions, only test that one.
