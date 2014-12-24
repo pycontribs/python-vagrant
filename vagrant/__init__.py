@@ -272,6 +272,13 @@ class Vagrant(object):
         self._call_vagrant_command(['suspend', vm_name])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
+    def resume(self, vm_name=None):
+        '''
+        Resume suspended machine.
+        '''
+        self._call_vagrant_command(['resume', vm_name])
+        self._cached_conf[vm_name] = None  # remove cached configuration
+
     def halt(self, vm_name=None, force=False):
         '''
         Halt the Vagrant box.
