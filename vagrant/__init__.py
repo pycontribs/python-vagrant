@@ -20,7 +20,7 @@ import logging
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 
 log = logging.getLogger(__name__)

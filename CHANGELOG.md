@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.2
+
+- Add resume command.
+  Author: Renat Zaripov (https://github.com/rrzaripov)
+  
 ## 0.5.1
 
 - Find the correct executable on Cygwin systems.  See `which` and
