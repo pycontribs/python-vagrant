@@ -573,6 +573,13 @@ class Vagrant(object):
             boxes.append(box)
         return boxes
 
+    def box_update(self, name, provider):
+        '''
+        Updates the box matching name and provider. It is an error if no box
+        matches name and provider.
+        '''
+        self._call_vagrant_command(['box', 'update', name, provider])
+
     def box_remove(self, name, provider):
         '''
         Removes the box matching name and provider. It is an error if no box
