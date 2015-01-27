@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.3
+
+- Add box update command.
+  Author: Alex Lourie (https://github.com/alourie)
+
 ## 0.5.2
 
 - Add resume command.
