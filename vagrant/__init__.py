@@ -603,9 +603,21 @@ class Vagrant(object):
             [Plugin(name='sahara', version='0.0.16', system=False),
              Plugin(name='vagrant-login', version='1.0.1', system=True),
              Plugin(name='vagrant-share', version='1.0.1', system=True)]
+             
+        Added condition is to ignore invalid lines insted of failing.
+        'vagrant-hostmanager (0.4.2.3)
+            - Version Constraint: 0.4.2.3'
+        is a possible and valid output
         '''
+        
         output = self._run_vagrant_command(['plugin', 'list'])
-        return [self._parse_plugin_list_line(l) for l in output.splitlines()]
+        plugins = []
+        for l in output.splitlines():
+            plugin = self._parse_plugin_list_line(l)
+            if plugin:
+                plugins.append(plugin)
+        return plugins
+
 
     def _parse_plugin_list_line(self, line):
         # As of Vagrant 1.5, the format of the `vagrant plugin list` command can
@@ -616,9 +628,7 @@ class Vagrant(object):
         # vagrant-login (1.0.1, system)
         regex = re.compile(r'^(?P<name>.+?)\s+\((?P<version>.+?)(?P<system>, system)?\)$')
         m = regex.search(line)
-        if m is None:
-            raise Exception('Error parsing plugin listing line.', line)
-        else:
+        if m is not None:
             return Plugin(m.group('name'), m.group('version'), bool(m.group('system')))
 
     def _parse_provider_line(self, line):
