@@ -66,12 +66,19 @@ def list_boxes():
     # precise64                (virtualbox)
     # python-vagrant-base      (virtualbox)
     # python-vagrant-dummy-box (virtualbox)
+    #
     # Example `box list` output with no boxes (vagrant 1.2.7):
     # There are no installed boxes! Use `vagrant box add` to add some.
+    #
+    # With multiple providers 'box list' output (vagrant 1.6):
+    # precise64                (virtualbox, 0)
+    # python-vagrant-base      (virtualbox, 0)
+    # ubuntu1204-large         (openstack, 0)
+    # ubuntu1204-medium        (openstack, 0)
     listing = subprocess.check_output('vagrant box list', shell=True)
     boxes = []
     for line in listing.splitlines():
-        m = re.search(r'^\s*(?P<name>.+?)\s+\((?P<provider>[^)]+)\)\s*$', line)
+        m = re.search(r'^\s*(?P<name>.+?)\s+\((?P<provider>[\w]+)[^)]*\)\s*$', line)
         if m:
             print m.groups()
             boxes.append((m.group('name'), m.group('provider')))
