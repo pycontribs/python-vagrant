@@ -643,8 +643,7 @@ class Vagrant(object):
             ('precise32', 'virtualbox')
             ('default                  not created', 'virtualbox')
         '''
-        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[^)]+)\)\s*$',
-                          line)
+        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[\w]+)[^)]*\)\s*$', line)
         if m:
             return m.group('value'), m.group('provider')
         else:
