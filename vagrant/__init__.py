@@ -10,6 +10,7 @@ Documentation of usage, testing, installation, etc., can be found at
 https://github.com/todddeluca/python-vagrant.
 '''
 
+import locale
 import collections
 import os
 import re
@@ -20,7 +21,7 @@ import logging
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.2'
+__version__ = '0.5.4'
 
 
 log = logging.getLogger(__name__)
@@ -603,9 +604,21 @@ class Vagrant(object):
             [Plugin(name='sahara', version='0.0.16', system=False),
              Plugin(name='vagrant-login', version='1.0.1', system=True),
              Plugin(name='vagrant-share', version='1.0.1', system=True)]
+
+        Added condition is to ignore invalid lines insted of failing.
+        'vagrant-hostmanager (0.4.2.3)
+            - Version Constraint: 0.4.2.3'
+        is a possible and valid output
         '''
+
         output = self._run_vagrant_command(['plugin', 'list'])
-        return [self._parse_plugin_list_line(l) for l in output.splitlines()]
+        plugins = []
+        for l in output.splitlines():
+            plugin = self._parse_plugin_list_line(l)
+            if plugin:
+                plugins.append(plugin)
+        return plugins
+
 
     def _parse_plugin_list_line(self, line):
         # As of Vagrant 1.5, the format of the `vagrant plugin list` command can
@@ -616,9 +629,7 @@ class Vagrant(object):
         # vagrant-login (1.0.1, system)
         regex = re.compile(r'^(?P<name>.+?)\s+\((?P<version>.+?)(?P<system>, system)?\)$')
         m = regex.search(line)
-        if m is None:
-            raise Exception('Error parsing plugin listing line.', line)
-        else:
+        if m is not None:
             return Plugin(m.group('name'), m.group('version'), bool(m.group('system')))
 
     def _parse_provider_line(self, line):
@@ -643,8 +654,7 @@ class Vagrant(object):
             ('precise32', 'virtualbox')
             ('default                  not created', 'virtualbox')
         '''
-        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[^)]+)\)\s*$',
-                          line)
+        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[\w]+)[^)]*\)\s*$', line)
         if m:
             return m.group('value'), m.group('provider')
         else:
@@ -725,7 +735,8 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        return subprocess.check_output(command, cwd=self.root)
+        encoding = locale.getpreferredencoding()
+        return subprocess.check_output(command, cwd=self.root).decode(encoding)
 
 
 class SandboxVagrant(Vagrant):

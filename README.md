@@ -57,7 +57,7 @@ and make sure any existing tests still work.  One can test with:
 - Vagrant 1.1 or greater (urrently tested with 1.5).  Using the latest version
   of Vagrant is strongly recommended.
 - Vagrant requires VirtualBox (e.g. VirtualBox 4.2.10) or another provider.
-- Python 2.7 (the only version this package has been tested with.)
+- Python 2.7 or Python 3.3+. Python 3.4 and 2.7 are recommended.
 - The Sahara gem for Vagrant is optional.  It will allow you to use
   `SandboxVagrant`.
 
