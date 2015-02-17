@@ -28,5 +28,8 @@ setup(
                    'Programming Language :: Python :: 3.3',
                    'Programming Language :: Python :: 3.4',
                   ],
-    packages = ['vagrant', 'future'],
+    install_requires = [
+        'future>=0.14.3',
+    ],
+    packages = ['vagrant'],
 )
