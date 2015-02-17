@@ -10,6 +10,7 @@ Documentation of usage, testing, installation, etc., can be found at
 https://github.com/todddeluca/python-vagrant.
 '''
 
+import locale
 import collections
 import os
 import re
@@ -603,13 +604,13 @@ class Vagrant(object):
             [Plugin(name='sahara', version='0.0.16', system=False),
              Plugin(name='vagrant-login', version='1.0.1', system=True),
              Plugin(name='vagrant-share', version='1.0.1', system=True)]
-             
+
         Added condition is to ignore invalid lines insted of failing.
         'vagrant-hostmanager (0.4.2.3)
             - Version Constraint: 0.4.2.3'
         is a possible and valid output
         '''
-        
+
         output = self._run_vagrant_command(['plugin', 'list'])
         plugins = []
         for l in output.splitlines():
@@ -734,7 +735,8 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        return subprocess.check_output(command, cwd=self.root)
+        encoding = locale.getpreferredencoding()
+        return subprocess.check_output(command, cwd=self.root).decode(encoding)
 
 
 class SandboxVagrant(Vagrant):
