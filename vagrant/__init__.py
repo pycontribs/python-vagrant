@@ -164,7 +164,7 @@ class Vagrant(object):
         'ubuntu-precise64': 'http://files.vagrantup.com/precise64.box',
     }
 
-    def __init__(self, root=None, quiet_stdout=True, quiet_stderr=True):
+    def __init__(self, root=None, quiet_stdout=True, quiet_stderr=True, env=None):
         '''
         root: a directory containing a file named Vagrantfile.  Defaults to
         os.getcwd(). This is the directory and Vagrantfile that the Vagrant
@@ -173,12 +173,15 @@ class Vagrant(object):
           not captured for further processing will be sent to devnull.
         quiet_stderr: If True, the stderr of vagrant commands whose output is
           not captured for further processing will be sent to devnull.
+        env=None: a mapping of key/value environment variables to be passed to
+        the vagrant command subprocess
         '''
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
         self._vagrant_exe = None # cache vagrant executable path
         self.quiet_stdout = quiet_stdout
         self.quiet_stderr = quiet_stderr
+        self.env = env
 
     def version(self):
         '''
@@ -210,6 +213,7 @@ class Vagrant(object):
            provision=None, provision_with=None):
         '''
         Launch the Vagrant box.
+        vm_name=None: name of VM.
         provision_with: optional list of provisioners to enable.
         provider: Back the machine with a specific provider
         no_provision: if True, disable provisioning.  Same as 'provision=False'.
@@ -774,9 +778,9 @@ class Vagrant(object):
                 outfh = fh if self.quiet_stdout else sys.stdout
                 errfh = fh if self.quiet_stderr else sys.stderr
                 subprocess.check_call(command, cwd=self.root,
-                                      stdout=outfh, stderr=errfh)
+                                      stdout=outfh, stderr=errfh, env=self.env)
         else:
-            subprocess.check_call(command, cwd=self.root)
+            subprocess.check_call(command, cwd=self.root, env=self.env)
 
     def _run_vagrant_command(self, args):
         '''

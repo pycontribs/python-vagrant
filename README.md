@@ -102,6 +102,36 @@ By default python vagrant instances are quiet, meaning that they capture stdout
 and stderr.  For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
 Set `quiet_stderr=False` for an even louder version.
 
+## Communication with Vagrant
+
+It's possible to communicate with the Vagrant subprocess using environment
+variables. The `Vagrantfile` could expect environment variables to be present
+and act accordingly. The environment variables can be set by `python-vagrant`.
+
+```python
+import vagrant
+
+v = vagrant.Vagrant()
+
+env = os.environ.copy()
+env['USE_NFS'] = '1'
+
+v.env = env
+v.up()  # will pass env to the vagrant subprocess
+```
+
+Alternatively, the environment can be passed at instantiation time.
+
+```python
+import vagrant
+
+env = os.environ.copy()
+env['USE_NFS'] = '1'
+
+v = vagrant.Vagrant(env=env)
+assert v.env is env  # True
+v.up()  # will pass env to the vagrant subprocess
+```
 
 ## Contribute
 

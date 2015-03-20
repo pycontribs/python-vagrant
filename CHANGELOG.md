@@ -4,6 +4,18 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## Unreleased
+
+- add instance attribute `Vagrant.env` which is a mapping of environment
+  variables to be passed to the vagrant subprocess when invoked. This allows
+  basic inter-process communication between Python and Vagrant via environment
+  variables.
+  Author: Alex Conrad (https://github.com/aconrad)
+
+- `Vagrant.__init__` now accepts a keyword argument `env=None` which will be
+  assigned to the instance attribute `Vagrant.env`.
+  Author: Alex Conrad (https://github.com/aconrad)
+
 ## 0.5.5
 
 Oops.  Pushed non-master branch to PyPI, for version 0.5.4.  Pushing master
