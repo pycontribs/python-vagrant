@@ -11,6 +11,7 @@ https://github.com/todddeluca/python-vagrant.
 '''
 
 import collections
+import itertools
 import os
 import re
 import subprocess
@@ -138,17 +139,22 @@ class Vagrant(object):
 
     Works by using the `vagrant` executable and a `Vagrantfile`.
     '''
-    # statuses
+
+    # Some machine-readable state values returned by status
+    # There are likely some missing, but if you use vagrant you should
+    # know what you are looking for.
+    # These exist partly for convenience and partly to document the output
+    # of vagrant.
     RUNNING = 'running'  # vagrant up
-    NOT_CREATED = 'not created'  # vagrant destroy
+    NOT_CREATED = 'not_created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
     ABORTED = 'aborted'  # The VM is in an aborted state
     SAVED = 'saved' # vagrant suspend
     # LXC statuses
     STOPPED = 'stopped'
     FROZEN = 'frozen'
-
-    STATUSES = (RUNNING, NOT_CREATED, POWEROFF, ABORTED, SAVED, STOPPED, FROZEN)
+    # libvirt
+    SHUTOFF = 'shutoff'
 
     BASE_BOXES = {
         'ubuntu-Lucid32': 'http://files.vagrantup.com/lucid32.box',
@@ -306,9 +312,6 @@ class Vagrant(object):
         - provider: the name of the VM provider, e.g. 'virtualbox'.  None
           if no provider is output by vagrant.
 
-        This information corresponds with the current return values from running
-        `vagrant status`, as of Vagrant 1.5.
-
         Example return values for a multi-VM environment:
 
             [Status(name='web', state='not created', provider='virtualbox'),
@@ -321,83 +324,76 @@ class Vagrant(object):
         Possible states include, but are not limited to (since new states are
         being added as Vagrant evolves):
 
-        - 'not created' if the vm is destroyed
+        - 'not_created' if the vm is destroyed
         - 'running' if the vm is up
         - 'poweroff' if the vm is halted
         - 'saved' if the vm is suspended
         - 'aborted' if the vm is aborted
-        - None if no status is found
 
-        As of Vagrant 1.1.0, vagrant has started supporting providers (like
-        virtualbox and vmware_fusion) and has started adding the provider in
-        the status string, like 'not created (virtualbox)'.
+        Implementation Details:
 
-        Implementation notes:
+        This command uses the `--machine-readable` flag added in
+        Vagrant 1.5,  mapping the target name, state, and provider-name
+        to a Status object.
 
-        - The human-readable output of vagrant lists the vm name as 'default'
-          in a single vm environment.  This is in contrast to the
-          Machine-readable output from vagrant, which lists the vm name
-          (a.k.a. target) as '' in a single VM environment.
-        - The human readable states differ from machine readable states.  For
-          example, 'not created' versus 'not_created'.  In order to future-proof
-          code using python-vagrant, use the status constants defined in the
-          Vagrant class instead of hardcoding the string.  At some point
-          parsing will switch from using the human-readable output to the
-          machine readable output and the state values might change as well.
+        Example with no VM name and multi-vm Vagrantfile:
+
+            $ vagrant status --machine-readable
+            1424098924,web,provider-name,virtualbox
+            1424098924,web,state,running
+            1424098924,web,state-human-short,running
+            1424098924,web,state-human-long,The VM is running. To stop this VM%!(VAGRANT_COMMA) you can run `vagrant halt` to\nshut it down forcefully%!(VAGRANT_COMMA) or you can run `vagrant suspend` to simply\nsuspend the virtual machine. In either case%!(VAGRANT_COMMA) to restart it again%!(VAGRANT_COMMA)\nsimply run `vagrant up`.
+            1424098924,db,provider-name,virtualbox
+            1424098924,db,state,not_created
+            1424098924,db,state-human-short,not created
+            1424098924,db,state-human-long,The environment has not yet been created. Run `vagrant up` to\ncreate the environment. If a machine is not created%!(VAGRANT_COMMA) only the\ndefault provider will be shown. So if a provider is not listed%!(VAGRANT_COMMA)\nthen the machine is not created for that environment.
+
+        Example with VM name:
+
+            $ vagrant status --machine-readable web
+            1424099027,web,provider-name,virtualbox
+            1424099027,web,state,running
+            1424099027,web,state-human-short,running
+            1424099027,web,state-human-long,The VM is running. To stop this VM%!(VAGRANT_COMMA) you can run `vagrant halt` to\nshut it down forcefully%!(VAGRANT_COMMA) or you can run `vagrant suspend` to simply\nsuspend the virtual machine. In either case%!(VAGRANT_COMMA) to restart it again%!(VAGRANT_COMMA)\nsimply run `vagrant up`.
+
+        Example with no VM name and single-vm Vagrantfile:
+
+            $ vagrant status --machine-readable
+            1424100021,default,provider-name,virtualbox
+            1424100021,default,state,not_created
+            1424100021,default,state-human-short,not created
+            1424100021,default,state-human-long,The environment has not yet been created. Run `vagrant up` to\ncreate the environment. If a machine is not created%!(VAGRANT_COMMA) only the\ndefault provider will be shown. So if a provider is not listed%!(VAGRANT_COMMA)\nthen the machine is not created for that environment.
+
+        Error example with incorrect VM name:
+
+            $ vagrant status --machine-readable api
+            1424099042,,error-exit,Vagrant::Errors::MachineNotFound,The machine with the name 'api' was not found configured for\nthis Vagrant environment.
+
+        Error example with missing Vagrantfile:
+
+            $ vagrant status --machine-readable
+            1424099094,,error-exit,Vagrant::Errors::NoEnvironmentError,A Vagrant environment or target machine is required to run this\ncommand. Run `vagrant init` to create a new Vagrant environment. Or%!(VAGRANT_COMMA)\nget an ID of a target machine from `vagrant global-status` to run\nthis command on. A final option is to change to a directory with a\nVagrantfile and to try again.
         '''
-        # example output (without provdier):
-        # Current VM states:
-        #
-        # default                  poweroff
-        #
-        # The VM is powered off. To restart the VM, simply run `vagrant up`
+        # machine-readable output are CSV lines
+        output = self._run_vagrant_command(['status', '--machine-readable', vm_name])
+        return self._parse_status(output)
 
-        # example multi-VM environment output (with provider):
-        # Current machine states:
-        #
-        # web                       not created (virtualbox)
-        # db                        not created (virtualbox)
-        #
-        # This environment represents multiple VMs. The VMs are all listed
-        # above with their current state. For more information about a specific
-        # VM, run `vagrant status NAME`.
-
-        output = self._run_vagrant_command(['status', vm_name])
-        # The format of output is expected to be a
-        #   - "Current VM states:" line (vagrant 1)
-        #   - "Current machine states" line (vagrant 1.1)
-        # followed by a blank line, followed by one or more status lines,
-        # followed by a blank line.
-
-        # Parsing the output of `vagrant status`
-        # Currently parsing is constrained to known states.  Otherwise how
-        # could we know where the VM name ends and the state begins.
-        # Once --machine-readable output is stable (a work in progress as of
-        # Vagrant 1.5), this constraint can be lifted.
-        START_LINE, FIRST_BLANK, VM_STATUS = 1, 2, 3
+    def _parse_status(self, output):
+        '''
+        Unit testing is so much easier when Vagrant is removed from the
+        equation.
+        '''
+        parsed = self._parse_machine_readable_output(output)
         statuses = []
-        parse_state = START_LINE # looking for for the 'Current ... states' line
-        for line in output.splitlines():
-            line = line.strip()
-            if parse_state == START_LINE and re.search('^Current (VM|machine) states:', line):
-                parse_state = FIRST_BLANK # looking for the first blank line
-            elif parse_state == FIRST_BLANK and not line:
-                parse_state = VM_STATUS # looking for machine status lines
-            elif parse_state == VM_STATUS and line:
-                vm_name_and_state, provider = self._parse_provider_line(line)
-                # Split vm_name from status.  Only works for recognized states.
-                m = re.search(r'^(?P<vm_name>.*?)\s+(?P<state>' +
-                              '|'.join(self.STATUSES) + ')$',
-                              vm_name_and_state)
-                if not m:
-                    raise Exception('ParseError: Failed to properly parse vm name and status from line.',
-                                    line, output)
-                else:
-                    status = Status(m.group('vm_name'), m.group('state'), provider)
-                    statuses.append(status)
-            elif parse_state == VM_STATUS and not line:
-                # Found the second blank line.  All done.
-                break
+        # group tuples by target name
+        # assuming tuples are sorted by target name, this should group all
+        # the tuples with info for each target.
+        for target, tuples in itertools.groupby(parsed, lambda tup: tup[1]):
+            # transform tuples into a dict mapping "type" to "data"
+            info = {kind: data for timestamp, _, kind, data in tuples}
+            status = Status(name=target, state=info.get('state'),
+                            provider=info.get('provider-name'))
+            statuses.append(status)
 
         return statuses
 
@@ -544,8 +540,9 @@ class Vagrant(object):
 
     def box_list(self):
         '''
-        Run `vagrant box list` and return a list of Box objects containing the
-        results.  A Box object has the following attributes:
+        Run `vagrant box list --machine-readable` and return a list of Box
+        objects containing the results.  A Box object has the following
+        attributes:
 
         - name: the box-name.
         - provider: the box-provider.
@@ -553,24 +550,58 @@ class Vagrant(object):
 
         Example output:
 
-            [Box(name='precise32', provider='virtualbox', version=None),
+            [Box(name='precise32', provider='virtualbox', version='0'),
              Box(name='precise64', provider='virtualbox', version=None),
              Box(name='trusty64', provider='virtualbox', version=None)]
 
-        Implementation Notes:
+        Implementation Details:
 
-        - The box-version is not currently returned, since we parse the
-          human-readable vagrant output, where it is not listed.  As of Vagrant
-          1.5 (or 1.4?) is is available in the --machine-readable output.
-          Once parsing is switched to use that output, it will be available.
-        - As of Vagrant >= 1.1, boxes are listed with names and providers.
+        Example machine-readable box listing output:
+
+            1424141572,,box-name,precise64
+            1424141572,,box-provider,virtualbox
+            1424141572,,box-version,0
+            1424141572,,box-name,python-vagrant-base
+            1424141572,,box-provider,virtualbox
+            1424141572,,box-version,0
+
+        Note that the box information iterates within the same blank target
+        value (the 2nd column).
         '''
-        output = self._run_vagrant_command(['box', 'list'])
+        # machine-readable output are CSV lines
+        output = self._run_vagrant_command(['box', 'list', '--machine-readable'])
+        return self._parse_box_list(output)
+
+    def _parse_box_list(self, output):
+        '''
+        Remove Vagrant usage for unit testing
+        '''
+        # Parse box list output
+        # Cue snarky comment about how nice it would be if vagrant used JSON
+        # or even had a description of the machine readable output for each
+        # command
+
         boxes = []
-        for line in output.splitlines():
-            name, provider = self._parse_provider_line(line)
-            box = Box(name, provider, version=None) # not currently parsing the box version
-            boxes.append(box)
+        # initialize box values
+        name = provider = version = None
+        for timestamp, target, kind, data in self._parse_machine_readable_output(output):
+            if kind == 'box-name':
+                # finish the previous box, if any
+                if name is not None:
+                    boxes.append(Box(name=name, provider=provider, version=version))
+
+                # start a new box
+                name = data # box name
+                provider = version = None
+            elif kind == 'box-provider':
+                provider = data
+            elif kind == 'box-version':
+                version = data
+
+        # finish the previous box, if any
+        if name is not None:
+            boxes.append(Box(name=name, provider=provider, version=version))
+
         return boxes
 
     def box_update(self, name, provider):
@@ -603,52 +634,83 @@ class Vagrant(object):
             [Plugin(name='sahara', version='0.0.16', system=False),
              Plugin(name='vagrant-login', version='1.0.1', system=True),
              Plugin(name='vagrant-share', version='1.0.1', system=True)]
+
+        Implementation Details:
+
+        Example output of `vagrant plugin list --machine-readable`:
+
+            $ vagrant plugin list --machine-readable
+            1424145521,,plugin-name,sahara
+            1424145521,sahara,plugin-version,0.0.16
+            1424145521,,plugin-name,vagrant-share
+            1424145521,vagrant-share,plugin-version,1.1.3%!(VAGRANT_COMMA) system
+
+        Note that the information for each plugin seems grouped within 
+        consecutive lines.  That information is also associated sometimes with
+        an empty target name and sometimes with the plugin name as the target
+        name.  Note also that a plugin version can be like '0.0.16' or 
+        '1.1.3, system'.
         '''
-        output = self._run_vagrant_command(['plugin', 'list'])
-        return [self._parse_plugin_list_line(l) for l in output.splitlines()]
+        output = self._run_vagrant_command(['plugin', 'list', '--machine-readable'])
+        return self._parse_plugin_list(output)
 
-    def _parse_plugin_list_line(self, line):
-        # As of Vagrant 1.5, the format of the `vagrant plugin list` command can
-        # be inferred here:
-        # https://github.com/mitchellh/vagrant/blob/master/plugins/commands/plugin/action/list_plugins.rb#L35
-        # Example plugin listing lines:
-        # sahara (0.0.16)
-        # vagrant-login (1.0.1, system)
-        regex = re.compile(r'^(?P<name>.+?)\s+\((?P<version>.+?)(?P<system>, system)?\)$')
-        m = regex.search(line)
-        if m is None:
-            raise Exception('Error parsing plugin listing line.', line)
-        else:
-            return Plugin(m.group('name'), m.group('version'), bool(m.group('system')))
-
-    def _parse_provider_line(self, line):
+    def _parse_plugin_list(self, output):
         '''
-        In vagrant 1.1+, `vagrant box list` produces lines like:
-
-            precise32                (virtualbox)
-
-        And `vagrant status` produces lines like:
-
-            default                  not created (virtualbox)
-
-        Pre-1.1 version of vagrant produce lines without a provider
-        in parentheses.  This helper function separates the beginning of the
-        line from the provider at the end of the line.  It assumes that the
-        provider is surrounded by parentheses (and contains no parentheses.
-        It returns the beginning of the line (trimmed of whitespace) and
-        the provider (or None if the line has no provider).
-
-        Example outputs:
-
-            ('precise32', 'virtualbox')
-            ('default                  not created', 'virtualbox')
+        Remove Vagrant from the equation for unit testing.
         '''
-        m = re.search(r'^\s*(?P<value>.+?)\s+\((?P<provider>[^)]+)\)\s*$',
-                          line)
-        if m:
-            return m.group('value'), m.group('provider')
-        else:
-            return line.strip(), None
+        ENCODED_COMMA = '%!(VAGRANT_COMMA)'
+
+        plugins = []
+        # initialize plugin values
+        name = None
+        version = None
+        system = False
+        for timestamp, target, kind, data in self._parse_machine_readable_output(output):
+            if kind == 'plugin-name':
+                # finish the previous plugin, if any
+                if name is not None:
+                    plugins.append(Plugin(name=name, version=version, system=system))
+
+                # start a new plugin
+                name = data # plugin name
+                version = None
+                system = False
+            elif kind == 'plugin-version':
+                if ENCODED_COMMA in data:
+                    version, etc = data.split(ENCODED_COMMA)
+                    system = (etc.strip().lower() == 'system')
+                else:
+                    version = data
+                    system = False
+
+        # finish the previous plugin, if any
+        if name is not None:
+            plugins.append(Plugin(name=name, version=version, system=system))
+
+        return plugins
+
+    def _parse_machine_readable_output(self, output):
+        '''
+        param output: a string containing the output of a vagrant command with the `--machine-readable` option.
+
+        returns: a dict mapping each 'target' in the machine readable output to
+        a dict.  The dict of each target, maps each target line type/kind to
+        its data.
+
+        Machine-readable output is a collection of CSV lines in the format:
+
+           timestamp, target, kind, data
+
+        Target is a VM name, possibly 'default', or ''.  The empty string
+        denotes information not specific to a particular VM, such as the
+        results of `vagrant box list`.
+        '''
+        # each line is a tuple of (timestamp, target, type, data)
+        # target is the VM name
+        # type is the type of data, e.g. 'provider-name', 'box-version'
+        # data is a (possibly comma separated) type-specific value, e.g. 'virtualbox', '0'
+        parsed_lines = [line.split(',', 3) for line in output.splitlines() if line.strip()]
+        return parsed_lines
 
     def _parse_config(self, ssh_config):
         '''
