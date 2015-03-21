@@ -4,6 +4,12 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.5
+
+Oops.  Pushed non-master branch to PyPI, for version 0.5.4.  Pushing master
+branch for 0.5.5.
+
+
 ## 0.5.4
 
 The major change in this version is switching to using `--machine-readable` in
