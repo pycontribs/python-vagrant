@@ -4,6 +4,23 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.4
+
+The major change in this version is switching to using `--machine-readable` in
+some vagrant commands to make the underlying `vagrant` commands return
+easily-parseable output.  The `--machine-readable` option requires Vagrant 1.4
+or higher.
+
+- Use `--machine-readable` output for `status`, `box_list`, and `plugin_list`.
+- Allow arbitrary status codes, so new statuses do not break parsing.
+  Previously, statuses were constrained to known ones for the sake of parsing.
+  Now that machine-readable vagrant output is being used, any status can be
+  parsed.
+- Status value constants (e.g. vagrant.Vagrant.NOT_CREATED) have changed to
+  match the "state" value returned by the `--machine-readable` output of
+  the `vagrant status` command.
+- The box version is now returned for a box listing
+
 ## 0.5.3
 
 - Add box update command.

@@ -35,28 +35,11 @@ backwards-incompatible changes occur.  The number `Y` is incremented when
 backwards-compatible features or bug fixes are added.
 
 
-## Contribute
-
-If you use python and vagrant and this project does not do what you want,
-please open an issue or a pull request on github at
-https://github.com/todddeluca/python-vagrant.
-
-Please see CHANGELOG.md for a detailed list of contributions and authors.
-
-When making a pull request, please include unit tests that test your changes
-and make sure any existing tests still work.  One can test with:
-
-    cd /path/to/python-vagrant
-    nosetests
-
-
 ## Requirements
 
-
-
-- Vagrant 1.1 or greater (urrently tested with 1.5).  Using the latest version
+- Vagrant 1.4 or greater (currently tested with 1.7.2).  Using the latest version
   of Vagrant is strongly recommended.
-- Vagrant requires VirtualBox (e.g. VirtualBox 4.2.10) or another provider.
+- Vagrant requires VirtualBox, VMWare, or another supported provider.
 - Python 2.7 (the only version this package has been tested with.)
 - The Sahara gem for Vagrant is optional.  It will allow you to use
   `SandboxVagrant`.
@@ -118,4 +101,31 @@ Another example showing how to use vagrant multi-vm feature with fabric:
 By default python vagrant instances are quiet, meaning that they capture stdout
 and stderr.  For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
 Set `quiet_stderr=False` for an even louder version.
+
+
+## Contribute
+
+If you use python and vagrant and this project does not do what you want,
+please open an issue or a pull request on github at
+https://github.com/todddeluca/python-vagrant.
+
+Please see CHANGELOG.md for a detailed list of contributions and authors.
+
+When making a pull request, please include unit tests that test your changes
+and make sure any existing tests still work.  See the Testing section below.
+
+
+## Testing
+
+Running the full suite of tests might take 10 minutes or so.  It involves
+downloading boxes and starting and stopping virtual machines several times.
+
+Run the tests from the top-level directory of the repository:
+
+    nosetests
+
+Here is an example of running an individual test:
+
+    nosetests tests.test_vagrant:test_boxes
+
 
