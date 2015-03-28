@@ -173,8 +173,9 @@ class Vagrant(object):
           not captured for further processing will be sent to devnull.
         quiet_stderr: If True, the stderr of vagrant commands whose output is
           not captured for further processing will be sent to devnull.
-        env=None: a mapping of key/value environment variables to be passed to
-        the vagrant command subprocess
+        env: a dict of environment variables (string keys and values) passed to
+          the vagrant command subprocess or None.  Defaults to None.  If env is
+          None, `subprocess.Popen` uses the current process environment.
         '''
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
@@ -791,7 +792,7 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        return subprocess.check_output(command, cwd=self.root)
+        return subprocess.check_output(command, cwd=self.root, env=self.env)
 
 
 class SandboxVagrant(Vagrant):
