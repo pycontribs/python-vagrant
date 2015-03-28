@@ -113,10 +113,10 @@ import vagrant
 
 v = vagrant.Vagrant()
 
-env = os.environ.copy()
-env['USE_NFS'] = '1'
+os_env = os.environ.copy()
+os_env['USE_NFS'] = '1'
 
-v.env = env
+v.env = os_env
 v.up()  # will pass env to the vagrant subprocess
 ```
 
@@ -125,8 +125,8 @@ Alternatively, the environment can be passed at instantiation time.
 ```python
 import vagrant
 
-env = os.environ.copy()
-env['USE_NFS'] = '1'
+os_env = os.environ.copy()
+os_env['USE_NFS'] = '1'
 
 v = vagrant.Vagrant(env=env)
 assert v.env is env  # True
