@@ -4,7 +4,7 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
-## Unreleased
+## 0.5.6
 
 - add instance attribute `Vagrant.env` which is a mapping of environment
   variables to be passed to the vagrant subprocess when invoked. This allows
