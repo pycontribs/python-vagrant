@@ -772,16 +772,13 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        if self.quiet_stdout or self.quiet_stderr:
-            # Redirect stdout and/or stderr to devnull
-            # Use with stmt to close filehandle in case of exception
-            with open(os.devnull, 'wb') as fh:
-                outfh = fh if self.quiet_stdout else sys.stdout
-                errfh = fh if self.quiet_stderr else sys.stderr
-                subprocess.check_call(command, cwd=self.root,
-                                      stdout=outfh, stderr=errfh, env=self.env)
-        else:
-            subprocess.check_call(command, cwd=self.root, env=self.env)
+        # Redirect stdout and/or stderr to devnull
+        # Use with stmt to close filehandle in case of exception
+        with open(os.devnull, 'wb') as fh:
+            outfh = fh if self.quiet_stdout else sys.stdout
+            errfh = fh if self.quiet_stderr else sys.stderr
+            subprocess.check_call(command, cwd=self.root,
+                                  stdout=outfh, stderr=errfh, env=self.env)
 
     def _run_vagrant_command(self, args):
         '''
