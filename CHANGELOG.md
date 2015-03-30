@@ -4,6 +4,18 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+
+## 0.5.7
+
+- Allow redirection of the output of the vagrant command subprocess to a file.
+
+  In order to log the output of the subprocess that runs vagrant commands,
+  or alternatively to silence that output, `Vagrant.__init__` accepts two
+  parameters, `out_cm` and `err_cm` that are no-argument functions that, when
+  executed, return a context manager that yields a filehandle suitable for use
+  with the `stdout` and `stderr` parameters of `subprocess.Popen`.
+
+
 ## 0.5.6
 
 - add instance attribute `Vagrant.env` which is a mapping of environment
@@ -15,6 +27,7 @@ changes) for each release of python-vagrant.
 - `Vagrant.__init__` now accepts a keyword argument `env=None` which will be
   assigned to the instance attribute `Vagrant.env`.
   Author: Alex Conrad (https://github.com/aconrad)
+
 
 ## 0.5.5
 

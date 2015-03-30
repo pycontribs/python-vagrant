@@ -5,15 +5,9 @@ Note that the tests can take few minutes to run because of the time
 required to bring up/down the VM.
 
 Most test functions (decorated with `@with_setup`) will actually bring the VM
-up/down. This for one is the "proper" way of doing things (isolation).  The
-downside of such workflow is that it increases the execution time of the test
-suite. The other approach (bringing the VM up once and packing all tests
-together) is less extensible.  With few tests it may work, but when the test
-suite grows it becomes a problem.
-
-In order to mitigate the inconvenience, each test method actually
-encapsulates few related tests. Aside from making the execution time shorter
-it also adds to readability.
+up/down. This is the "proper" way of doing things (isolation).  However, the
+downside of such a workflow is that it increases the execution time of the test
+suite. 
 
 Before the first test a base box is added to Vagrant under the name
 TEST_BOX_NAME. This box is not deleted after the test suite runs in order
@@ -481,6 +475,27 @@ def test_multivm_config():
 
     keyfile = v.keyfile(vm_name=VM_1)
     eq_(keyfile, parsed_config["IdentityFile"])
+
+
+def test_make_file_cm():
+    filename = os.path.join(TD, 'test.log')
+    if os.path.exists(filename):
+        os.remove(filename)
+
+    # Test writing to the filehandle yielded by cm
+    cm = vagrant.make_file_cm(filename)
+    with cm() as fh:
+        fh.write('one\n')
+
+    with open(filename) as read_fh:
+        assert read_fh.read() == 'one\n'
+
+    # Test appending to the file yielded by cm
+    with cm() as fh:
+        fh.write('two\n')
+
+    with open(filename) as read_fh:
+        assert read_fh.read() == 'one\ntwo\n'
 
 
 def _execute_command_in_vm(v, command):

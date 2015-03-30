@@ -11,6 +11,7 @@ https://github.com/todddeluca/python-vagrant.
 '''
 
 import collections
+import contextlib
 import itertools
 import os
 import re
@@ -26,6 +27,9 @@ __version__ = '0.5.6'
 
 log = logging.getLogger(__name__)
 
+
+###########################################
+# Determine Where The Vagrant Executable Is
 
 VAGRANT_NOT_FOUND_WARNING = 'The Vagrant executable cannot be found. ' \
                             'Please check if it is in the system path.'
@@ -131,6 +135,57 @@ Box = collections.namedtuple('Box', ['name', 'provider', 'version'])
 Plugin = collections.namedtuple('Plugin', ['name', 'version', 'system'])
 
 
+#########################################################################
+# Context Managers for Handling the Output of Vagrant Subprocess Commands
+
+
+@contextlib.contextmanager
+def stdout_cm():
+    ''' Redirect the stdout or stderr of the child process to sys.stdout. '''
+    yield sys.stdout
+
+
+@contextlib.contextmanager
+def stderr_cm():
+    ''' Redirect the stdout or stderr of the child process to sys.stderr. '''
+    yield sys.stderr
+
+
+@contextlib.contextmanager
+def devnull_cm():
+    ''' Redirect the stdout or stderr of the child process to /dev/null. '''
+    with open('/dev/null', 'w') as fh:
+        yield fh
+
+
+@contextlib.contextmanager
+def none_cm():
+    ''' Use the stdout or stderr file handle of the parent process. '''
+    yield None
+
+
+def make_file_cm(filename, mode='a'):
+    '''
+    Open a file for appending and yield the open filehandle.  Close the 
+    filehandle after yielding it.  This is useful for creating a context
+    manager for logging the output of a `Vagrant` instance.
+
+    filename: a path to a file
+    mode: The mode in which to open the file.  Defaults to 'a', append
+
+    Usage example:
+
+        log_cm = make_file_cm('application.log')
+        v = Vagrant(out_cm=log_cm, err_cm=log_cm)
+    '''
+    @contextlib.contextmanager
+    def cm():
+        with open(filename, mode=mode) as fh:
+            yield fh
+
+    return cm
+
+
 class Vagrant(object):
     '''
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
@@ -164,25 +219,53 @@ class Vagrant(object):
         'ubuntu-precise64': 'http://files.vagrantup.com/precise64.box',
     }
 
-    def __init__(self, root=None, quiet_stdout=True, quiet_stderr=True, env=None):
+    def __init__(self, root=None, quiet_stdout=True, quiet_stderr=True,
+                 env=None, out_cm=None, err_cm=None):
         '''
         root: a directory containing a file named Vagrantfile.  Defaults to
         os.getcwd(). This is the directory and Vagrantfile that the Vagrant
         instance will operate on.
-        quiet_stdout: If True, the stdout of vagrant commands whose output is
-          not captured for further processing will be sent to devnull.
-        quiet_stderr: If True, the stderr of vagrant commands whose output is
-          not captured for further processing will be sent to devnull.
         env: a dict of environment variables (string keys and values) passed to
           the vagrant command subprocess or None.  Defaults to None.  If env is
           None, `subprocess.Popen` uses the current process environment.
+        out_cm: a ContextManager that yields a filehandle that is passed to
+          the subprocess that runs a vagrant command, to handle its stdout.
+          Using a context manager allows one to close the filehandle in case of
+          an Exception, if necessary.  Defaults to stdout_cm, a context manager
+          that just yields `sys.stdout`.  See `make_file_cm` for an example of
+          how to log stdout to a file.  Note that commands that parse the
+          output of a vagrant command, like `status`, capture output for their
+          own use, ignoring the value of `out_cm` and `quiet_stdout`.
+        err_cm: a ContextManager, like out_cm, for handling the stderr of the 
+          vagrant subprocess.  Defaults to stderr_cm.
+        quiet_stdout: Ignored if out_cm is not None.  If True, the stdout of
+          vagrant commands whose output is not captured for further processing
+          will be sent to devnull.
+        quiet_stderr: Ignored if out_cm is not None.  If True, the stderr of
+          vagrant commands whose output is not captured for further processing
+          will be sent to devnull.
         '''
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
         self._vagrant_exe = None # cache vagrant executable path
-        self.quiet_stdout = quiet_stdout
-        self.quiet_stderr = quiet_stderr
         self.env = env
+        if out_cm is not None:
+            self.out_cm = out_cm
+        elif quiet_stdout:
+            self.out_cm = devnull_cm
+        else:
+            # Using none_cm instead of stdout_cm, because in some situations,
+            # e.g. using nosetests, sys.stdout is a StringIO object, not a
+            # filehandle.  Also, passing None to the subprocess is consistent
+            # with past behavior.
+            self.out_cm = none_cm
+
+        if err_cm is not None:
+            self.err_cm = err_cm
+        elif quiet_stderr:
+            self.err_cm = devnull_cm
+        else:
+            self.err_cm = none_cm
 
     def version(self):
         '''
@@ -772,13 +855,10 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        # Redirect stdout and/or stderr to devnull
-        # Use with stmt to close filehandle in case of exception
-        with open(os.devnull, 'wb') as fh:
-            outfh = fh if self.quiet_stdout else sys.stdout
-            errfh = fh if self.quiet_stderr else sys.stderr
-            subprocess.check_call(command, cwd=self.root,
-                                  stdout=outfh, stderr=errfh, env=self.env)
+        print command
+        with self.out_cm() as out_fh, self.err_cm() as err_fh:
+            subprocess.check_call(command, cwd=self.root, stdout=out_fh,
+                                  stderr=err_fh, env=self.env)
 
     def _run_vagrant_command(self, args):
         '''
@@ -789,7 +869,9 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        return subprocess.check_output(command, cwd=self.root, env=self.env)
+        with self.err_cm() as err_fh:
+            return subprocess.check_output(command, cwd=self.root,
+                                           env=self.env, stderr=err_fh)
 
 
 class SandboxVagrant(Vagrant):
