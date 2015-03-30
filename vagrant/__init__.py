@@ -228,16 +228,18 @@ class Vagrant(object):
         env: a dict of environment variables (string keys and values) passed to
           the vagrant command subprocess or None.  Defaults to None.  If env is
           None, `subprocess.Popen` uses the current process environment.
-        out_cm: a ContextManager that yields a filehandle that is passed to
-          the subprocess that runs a vagrant command, to handle its stdout.
+        out_cm: a no-argument function that returns a ContextManager that
+          yields a filehandle or other object suitable to be passed as the
+          `stdout` parameter of a subprocess that runs a vagrant command.
           Using a context manager allows one to close the filehandle in case of
-          an Exception, if necessary.  Defaults to stdout_cm, a context manager
-          that just yields `sys.stdout`.  See `make_file_cm` for an example of
+          an Exception, if necessary.  Defaults to none_cm, a context manager
+          that yields None.  See `make_file_cm` for an example of
           how to log stdout to a file.  Note that commands that parse the
           output of a vagrant command, like `status`, capture output for their
           own use, ignoring the value of `out_cm` and `quiet_stdout`.
-        err_cm: a ContextManager, like out_cm, for handling the stderr of the 
-          vagrant subprocess.  Defaults to stderr_cm.
+        err_cm: a no-argument function that returns a ContextManager, like
+          out_cm, for handling the stderr of the vagrant subprocess.  Defaults
+          to none_cm.
         quiet_stdout: Ignored if out_cm is not None.  If True, the stdout of
           vagrant commands whose output is not captured for further processing
           will be sent to devnull.
