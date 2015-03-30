@@ -5,6 +5,12 @@ This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
 
+## 0.5.8
+
+- Fix regression where vagrant commands were being printed to stdout.
+  Author: Todd DeLuca (https://github.com/todddeluca)
+
+
 ## 0.5.7
 
 - Allow redirection of the output of the vagrant command subprocess to a file.

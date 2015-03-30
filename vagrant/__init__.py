@@ -22,7 +22,7 @@ import logging
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.7'
+__version__ = '0.5.8'
 
 
 log = logging.getLogger(__name__)
@@ -857,7 +857,6 @@ class Vagrant(object):
         '''
         # Make subprocess command
         command = self._make_vagrant_command(args)
-        print command
         with self.out_cm() as out_fh, self.err_cm() as err_fh:
             subprocess.check_call(command, cwd=self.root, stdout=out_fh,
                                   stderr=err_fh, env=self.env)
