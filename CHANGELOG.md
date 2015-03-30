@@ -12,8 +12,10 @@ changes) for each release of python-vagrant.
   In order to log the output of the subprocess that runs vagrant commands,
   or alternatively to silence that output, `Vagrant.__init__` accepts two
   parameters, `out_cm` and `err_cm` that are no-argument functions that, when
-  executed, return a context manager that yields a filehandle suitable for use
-  with the `stdout` and `stderr` parameters of `subprocess.Popen`.
+  executed, return a context manager that yields a filehandle, etc., suitable
+  for use with the `stdout` and `stderr` parameters of `subprocess.Popen`.
+  Author: Manuel Sanchez (https://github.com/omoman)
+  Author: Todd DeLuca (https://github.com/todddeluca)
 
 
 ## 0.5.6
