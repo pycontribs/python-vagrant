@@ -154,7 +154,7 @@ def stderr_cm():
 @contextlib.contextmanager
 def devnull_cm():
     ''' Redirect the stdout or stderr of the child process to /dev/null. '''
-    with open('/dev/null', 'w') as fh:
+    with open(os.devnull, 'w') as fh:
         yield fh
 
 
