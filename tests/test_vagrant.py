@@ -7,14 +7,14 @@ required to bring up/down the VM.
 Most test functions (decorated with `@with_setup`) will actually bring the VM
 up/down. This is the "proper" way of doing things (isolation).  However, the
 downside of such a workflow is that it increases the execution time of the test
-suite. 
+suite.
 
 Before the first test a base box is added to Vagrant under the name
 TEST_BOX_NAME. This box is not deleted after the test suite runs in order
 to avoid downloading of the box file on every run.
 '''
 
-
+from __future__ import print_function
 import os
 import re
 import unittest
@@ -26,6 +26,7 @@ import time
 from nose.tools import eq_, ok_, with_setup
 
 import vagrant
+from vagrant import compat
 
 # location of a test file on the created box by provisioning in vm_Vagrantfile
 TEST_FILE_PATH = '/home/vagrant/python_vagrant_test_file'
@@ -55,7 +56,7 @@ def list_box_names():
     implemented outside of `vagrant.Vagrant`, so that it will still work
     even if the `Vagrant.box_list()` implementation is broken.
     '''
-    listing = subprocess.check_output('vagrant box list --machine-readable', shell=True)
+    listing = compat.decode(subprocess.check_output('vagrant box list --machine-readable', shell=True))
     box_names = []
     for line in listing.splitlines():
         timestamp, _, kind, data = line.split(',')
@@ -246,7 +247,7 @@ def test_vm_config():
     v = vagrant.Vagrant(TD)
     v.up()
     command = "vagrant ssh-config"
-    ssh_config = subprocess.check_output(command, cwd=TD, shell=True)
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=TD, shell=True))
     parsed_config = dict(line.strip().split(None, 1) for line in
                             ssh_config.splitlines() if line.strip() and not
                             line.strip().startswith('#'))
@@ -315,36 +316,36 @@ def test_vm_sandbox_mode():
     assert sandbox_status == "on", "After bringing the VM up again the status should be 'on', " + "got:'{}'".format(sandbox_status)
 
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, None, "There should be no test file")
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
 
     v.sandbox_rollback()
     time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
 
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, None, "There should be no test file")
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
     v.sandbox_commit()
     _write_test_file(v, "bar")
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, "bar", "The test file should read 'bar'")
 
     v.sandbox_rollback()
     time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
 
     test_file_contents = _read_test_file(v)
-    print test_file_contents
+    print(test_file_contents)
     eq_(test_file_contents, "foo", "The test file should read 'foo'")
 
     sandbox_status = v._parse_vagrant_sandbox_status("Usage: ...")
@@ -403,7 +404,7 @@ def test_provisioning():
 
     v.provision()
     test_file_contents = _read_test_file(v)
-    print "Contents: {}".format(test_file_contents)
+    print("Contents: {}".format(test_file_contents))
     eq_(test_file_contents, "foo", "The test file should contain 'foo'")
 
 
@@ -449,7 +450,7 @@ def test_multivm_config():
     v = vagrant.Vagrant(TD, quiet_stdout=False, quiet_stderr=False)
     v.up(vm_name=VM_1)
     command = "vagrant ssh-config " + VM_1
-    ssh_config = subprocess.check_output(command, cwd=TD, shell=True)
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=TD, shell=True))
     parsed_config = dict(line.strip().split(None, 1) for line in
                             ssh_config.splitlines() if line.strip() and not
                             line.strip().startswith('#'))
@@ -510,7 +511,7 @@ def _execute_command_in_vm(v, command):
 
     # ignore the fact that this host is not in our known hosts
     ssh_command = [vagrant_exe, 'ssh', '-c', command]
-    return subprocess.check_output(ssh_command, cwd=v.root)
+    return compat.decode(subprocess.check_output(ssh_command, cwd=v.root))
 
 
 def _write_test_file(v, file_contents):
