@@ -4,6 +4,9 @@
 .pydevproject
 .idea
 
+# tox testing
+.tox/
+
 .vagrant
 Vagrantfile
 !tests/vagrantfiles/**/Vagrantfile
