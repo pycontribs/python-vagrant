@@ -5,6 +5,14 @@ This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
 
+## 0.5.9
+
+- Support Python 3 in addition to Python 2
+  Author: Volodymyr Vitvitskyi (https://github.com/signalpillar)
+- Use `os.devnull` for Windows compatability.
+  Author: Renat Zaripov (https://github.com/rrzaripov)
+
+
 ## 0.5.8
 
 - Fix regression where vagrant commands were being printed to stdout.
