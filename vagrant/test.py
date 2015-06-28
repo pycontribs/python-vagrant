@@ -3,7 +3,7 @@ A TestCase class, tying together the Vagrant class and removing some of the boil
 that leverage vagrant boxes.
 """
 from unittest import TestCase
-from vagrant import Vagrant
+from vagrant import Vagrant, stderr_cm
 
 __author__ = 'nick'
 
@@ -31,7 +31,7 @@ class VagrantTestCase(TestCase):
 
 	def __init__(self, *args, **kwargs):
 		"""Check that the vagrant_boxes attribute is not left empty, and is populated by all boxes if left blank"""
-		self.vagrant = Vagrant(self.vagrant_root)
+		self.vagrant = Vagrant(self.vagrant_root, err_cm=stderr_cm)
 		if not self.vagrant_boxes:
 			boxes = [s.name for s in self.vagrant.status()]
 			if len(boxes) == 1:

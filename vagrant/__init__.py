@@ -10,6 +10,7 @@ Documentation of usage, testing, installation, etc., can be found at
 https://github.com/todddeluca/python-vagrant.
 '''
 
+# std
 import collections
 import contextlib
 import itertools
@@ -18,6 +19,9 @@ import re
 import subprocess
 import sys
 import logging
+
+# local
+from . import compat
 
 
 # python package version
@@ -871,8 +875,8 @@ class Vagrant(object):
         # Make subprocess command
         command = self._make_vagrant_command(args)
         with self.err_cm() as err_fh:
-            return subprocess.check_output(command, cwd=self.root,
-                                           env=self.env, stderr=err_fh)
+            return compat.decode(subprocess.check_output(command, cwd=self.root,
+                                               env=self.env, stderr=err_fh))
 
 
 class SandboxVagrant(Vagrant):
