@@ -803,7 +803,11 @@ class Vagrant(object):
         # target is the VM name
         # type is the type of data, e.g. 'provider-name', 'box-version'
         # data is a (possibly comma separated) type-specific value, e.g. 'virtualbox', '0'
-        parsed_lines = [line.split(',', 3) for line in output.splitlines() if line.strip()]
+        parsed_lines = [line.split(',', 4) for line in output.splitlines() if line.strip()]
+        # vagrant 1.8 adds additional fields that aren't required,
+        # and will break parsing if included in the status lines.
+        # filter them out pending future implementation.
+        parsed_lines = list(filter(lambda x: x[2] != "metadata" and x[2] != "ui", parsed_lines))
         return parsed_lines
 
     def _parse_config(self, ssh_config):

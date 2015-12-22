@@ -59,7 +59,12 @@ def list_box_names():
     listing = compat.decode(subprocess.check_output('vagrant box list --machine-readable', shell=True))
     box_names = []
     for line in listing.splitlines():
-        timestamp, _, kind, data = line.split(',')
+        # Vagrant 1.8 added additional fields to the --machine-readable output,
+        # so unpack the fields according to the number of separators found.
+        if line.count(',') == 3:
+            timestamp, _, kind, data = line.split(',')
+        else:
+            timestamp, _, kind, data, extra_data = line.split(',')
         if kind == 'box-name':
             box_names.append(data.strip())
     return box_names
@@ -272,7 +277,11 @@ def test_vm_config():
         "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
 
     keyfile = v.keyfile()
-    eq_(keyfile, parsed_config["IdentityFile"])
+    try:
+        eq_(keyfile, parsed_config["IdentityFile"])
+    except AssertionError:
+        # Vagrant 1.8 adds quotes around the filepath for the private key.
+        eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
 @with_setup(make_setup_vm(), teardown_vm)
@@ -475,7 +484,11 @@ def test_multivm_config():
         "{}@{}:{}".format(expected_user, expected_hostname, expected_port))
 
     keyfile = v.keyfile(vm_name=VM_1)
-    eq_(keyfile, parsed_config["IdentityFile"])
+    try:
+        eq_(keyfile, parsed_config["IdentityFile"])
+    except AssertionError:
+        # Vagrant 1.8 adds quotes around the filepath for the private key.
+        eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
 def test_make_file_cm():
