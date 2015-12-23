@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.10
+
+- Pull Request 46: Adds support for Vagrant 1.8 `--machine-readable` changes.
+  See https://github.com/todddeluca/python-vagrant/pull/46.
+  Author: Conor (https://github.com/conorsch)
 
 ## 0.5.9
 
