@@ -666,6 +666,51 @@ class Vagrant(object):
         output = self._run_vagrant_command(['box', 'list', '--machine-readable'])
         return self._parse_box_list(output)
 
+    def snapshot_push(self):
+        '''
+        This takes a snapshot and pushes it onto the snapshot stack.
+        '''
+        self._call_vagrant_command(['snapshot', 'push'])
+
+    def snapshot_pop(self):
+        '''
+        This command is the inverse of vagrant snapshot push: it will restore the pushed state.
+        '''
+        NO_SNAPSHOTS_PUSHED = 'No pushed snapshot found!'
+        output = self._run_vagrant_command(['snapshot', 'pop'])
+        if NO_SNAPSHOTS_PUSHED in output:
+            raise RuntimeError(NO_SNAPSHOTS_PUSHED)
+
+    def snapshot_save(self, name):
+        '''
+        This command saves a new named snapshot.
+        If this command is used, the push and pop subcommands cannot be safely used.
+        '''
+        self._call_vagrant_command(['snapshot', 'save', name])
+
+    def snapshot_restore(self, name):
+        '''
+        This command restores the named snapshot.
+        '''
+        self._call_vagrant_command(['snapshot', 'restore', name])
+
+    def snapshot_list(self):
+        '''
+        This command will list all the snapshots taken.
+        '''
+        NO_SNAPSHOTS_TAKEN = 'No snapshots have been taken yet!'
+        output = self._run_vagrant_command(['snapshot', 'list'])
+        if NO_SNAPSHOTS_TAKEN in output:
+            return []
+        else:
+            return output.splitlines()
+
+    def snapshot_delete(self, name):
+        '''
+        This command will delete the named snapshot.
+        '''
+        self._call_vagrant_command(['snapshot', 'delete', name])
+
     def _parse_box_list(self, output):
         '''
         Remove Vagrant usage for unit testing
