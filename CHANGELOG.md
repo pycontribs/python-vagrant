@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.11
+
+- Pull Request #47: Add support for snapshot command (vagrant version >= 1.8.0)
+  Author: Renat Zaripov (https://github.com/rrzaripov)
+
 ## 0.5.10
 
 - Pull Request 46: Adds support for Vagrant 1.8 `--machine-readable` changes.
