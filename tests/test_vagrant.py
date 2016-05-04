@@ -198,6 +198,35 @@ def test_parse_status():
 
 
 @with_setup(make_setup_vm(), teardown_vm)
+def test_parse_aws_status():
+    '''
+    Test the parsing the output of the `vagrant status` command for an aws instance.
+    '''
+    listing = '''1462351212,default,action,read_state,start
+1462351214,default,action,read_state,end
+1462351214,default,metadata,provider,aws
+1462351214,default,action,read_state,start
+1462351215,default,action,read_state,end
+1462351215,default,action,read_state,start
+1462351216,default,action,read_state,end
+1462351216,default,action,read_state,start
+1462351217,default,action,read_state,end
+1462351217,default,provider-name,aws
+1462351217,default,state,running
+1462351217,default,state-human-short,running
+1462351217,default,state-human-long,The EC2 instance is running. To stop this machine%!(VAGRANT_COMMA) you can run\\n`vagrant halt`. To destroy the machine%!(VAGRANT_COMMA) you can run `vagrant destroy`.
+1462351217,default,action,read_state,start
+1462351219,default,action,read_state,end
+1462351219,,ui,info,Current machine states:\\n\\ndefault (aws)\\n\\nThe EC2 instance is running. To stop this machine%!(VAGRANT_COMMA) you can run\\n`vagrant halt`. To destroy the machine%!(VAGRANT_COMMA) you can run `vagrant destroy`.
+'''
+    # Can compare tuples to Status class b/c Status is a collections.namedtuple.
+    goal = [('default', 'running', 'aws')]
+    v = vagrant.Vagrant(TD)
+    parsed = v._parse_status(listing)
+    assert goal == parsed, 'The parsing of the test listing did not match the goal.\nlisting={!r}\ngoal={!r}\nparsed_listing={!r}'.format(listing, goal, parsed)
+
+
+@with_setup(make_setup_vm(), teardown_vm)
 def test_vm_status():
     '''
     Test whether vagrant.status() correctly reports state of the VM, in a
