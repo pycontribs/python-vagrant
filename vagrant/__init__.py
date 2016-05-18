@@ -852,7 +852,7 @@ class Vagrant(object):
         # vagrant 1.8 adds additional fields that aren't required,
         # and will break parsing if included in the status lines.
         # filter them out pending future implementation.
-        parsed_lines = list(filter(lambda x: x[2] != "metadata" and x[2] != "ui", parsed_lines))
+        parsed_lines = list(filter(lambda x: x[2] not in ["metadata", "ui", "action"], parsed_lines))
         return parsed_lines
 
     def _parse_config(self, ssh_config):
