@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.13
+
+- Pull Request #50: Filter out unneeded status lines for AWS instances
+  Author: Brian Berry (https://github.com/bryanwb)
+
 ## 0.5.11
 
 - Pull Request #47: Add support for snapshot command (vagrant version >= 1.8.0)
