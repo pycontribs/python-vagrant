@@ -4,6 +4,11 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## 0.5.14
+
+- Pull Request #51: Add support for the vagrant package command.
+  Author: Hans-Christoph Steiner (https://github.com/eighthave)
+
 ## 0.5.13
 
 - Pull Request #50: Filter out unneeded status lines for AWS instances
