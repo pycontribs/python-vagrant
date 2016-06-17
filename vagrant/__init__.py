@@ -666,6 +666,23 @@ class Vagrant(object):
         output = self._run_vagrant_command(['box', 'list', '--machine-readable'])
         return self._parse_box_list(output)
 
+    def package(self, vm_name=None, base=None, output=None, vagrantfile=None):
+        '''
+        Packages a running vagrant environment into a box.
+
+        vm_name=None: name of VM.
+        base=None: name of a VM in virtualbox to package as a base box
+        output=None: name of the file to output
+        vagrantfile=None: Vagrantfile to package with this box
+        '''
+        cmd = ['package', vm_name]
+        if output is not None:
+            cmd += ['--output', output]
+        if vagrantfile is not None:
+            cmd += ['--vagrantfile', vagrantfile]
+
+        self._call_vagrant_command(cmd)
+
     def snapshot_push(self):
         '''
         This takes a snapshot and pushes it onto the snapshot stack.
