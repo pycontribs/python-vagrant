@@ -372,6 +372,13 @@ class Vagrant(object):
         self._call_vagrant_command(['suspend', vm_name])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
+    def ssh(self, vm_name=None):
+        '''
+        Suspend/save the machine.
+        '''
+        self._call_vagrant_command(['ssh', vm_name])
+        self._cached_conf[vm_name] = None  # remove cached configuration
+
     def resume(self, vm_name=None):
         '''
         Resume suspended machine.
