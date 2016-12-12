@@ -520,6 +520,41 @@ def test_multivm_config():
         eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
+@with_setup(make_setup_vm(), teardown_vm)
+def test_output_filter():
+    """
+    Test output filters with good input.
+    """
+    v = vagrant.Vagrant(TD, out_cm=vagrant.stdout_cm)
+    of = {'string_pat': {'pat': r"Importing base box '(\S+)'",
+                         'group': 1},
+          'compiled_pat': {'pat': re.compile(r'22 \(guest\) => (\d+) \(host\)'),
+                           'group': 1}
+          }
+    matches = v.up(output_filter=of)
+
+    assert matches['string_pat'] == TEST_BOX_NAME
+
+    assert matches['compiled_pat'] is not None  # Usually '2222', but may vary depending on the test env
+
+
+@with_setup(make_setup_vm(), teardown_vm)
+def test_output_filter_fail():
+    """
+    Test output filters with bad input.
+    """
+    v = vagrant.Vagrant(TD, out_cm=vagrant.stdout_cm)
+    of = {'failing_test': {'pat': ['invalid', 'regex', 'pattern'],
+                           'group': 0}
+          }
+    try:
+        v.up(output_filter=of)
+    except TypeError:
+        pass
+    else:
+        assert False
+
+
 def test_make_file_cm():
     filename = os.path.join(TD, 'test.log')
     if os.path.exists(filename):
