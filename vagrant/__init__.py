@@ -337,8 +337,7 @@ class Vagrant(object):
             # however vm_name is required for conf() or ssh_config().
             pass
 
-        if filter_results:
-            return filter_results
+        return filter_results
 
     def provision(self, vm_name=None, provision_with=None):
         '''
@@ -352,7 +351,8 @@ class Vagrant(object):
         self._call_vagrant_command(['provision', vm_name, prov_with_arg,
                                    providers_arg])
 
-    def reload(self, vm_name=None, provision=None, provision_with=None):
+    def reload(self, vm_name=None, provision=None, provision_with=None,
+               output_filter=None):
         '''
         Quoting from Vagrant docs:
         > The equivalent of running a halt followed by an up.
@@ -369,8 +369,15 @@ class Vagrant(object):
         prov_with_arg = None if provision_with is None else '--provision-with'
         providers_arg = None if provision_with is None else ','.join(provision_with)
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
-        self._call_vagrant_command(['reload', vm_name, provision_arg,
-                                   prov_with_arg, providers_arg])
+
+        args = ['reload', vm_name, provision_arg, prov_with_arg, providers_arg]
+        filter_results = None
+        if isinstance(output_filter, dict):
+            filter_results = self._filter_vagrant_command(args, output_filter)
+        else:
+            self._call_vagrant_command(args)
+
+        return filter_results
 
     def suspend(self, vm_name=None):
         '''
