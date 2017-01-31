@@ -979,10 +979,7 @@ class Vagrant(object):
         :rtype: dict
         """
         assert isinstance(output_filter, dict)
-        if sys.version_info > (3, 0):
-            py3 = True
-        else:
-            py3 = False
+        py3 = sys.version_info > (3, 0)
 
         # Create dictionary that will store the results from the filters
         filter_results = dict.fromkeys(output_filter)
@@ -990,6 +987,10 @@ class Vagrant(object):
         for f in output_filter.keys():
             # Check the filter values, compile as regular expression objects if necessary
             if not isinstance(output_filter[f]['pat'], type(re.compile(''))):
+                if py3 and isinstance(output_filter[f]['pat'], str):
+                    # In Python 3, the output from subprocess will be bytes, so the pattern has to be bytes as well
+                    # for it to match.
+                    output_filter[f]['pat'] = output_filter[f]['pat'].encode()
                 try:
                     output_filter[f]['pat'] = re.compile(output_filter[f]['pat'])
                 except TypeError:
