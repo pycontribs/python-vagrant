@@ -1015,7 +1015,7 @@ class Vagrant(object):
 
             # Parse command output for the specified filters. Method used depends on version of Python.
             # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
-            if not py3:  # Python < 3.0
+            if not py3:  # Python 2.x
                 p = subprocess.Popen(**sp_args)
                 with p.stdout:
                     for line in iter(p.stdout.readline, b''):
@@ -1023,7 +1023,11 @@ class Vagrant(object):
                         for f in output_filter.keys():
                             m = re.search(output_filter[f]['pat'], line)
                             if m:
-                                filter_results[f] = m.group(output_filter[f]['group'])
+                                try:
+                                    filter_results[f] = m.group(output_filter[f]['group'])
+                                except IndexError:
+                                    # User must have not included parenthases in their pattern
+                                    pass
                                 # No need to search for this pattern again in future lines
                                 pop_key = f
                                 break
@@ -1038,7 +1042,11 @@ class Vagrant(object):
                         for f in output_filter.keys():
                             m = re.search(output_filter[f]['pat'], line)
                             if m:
-                                filter_results[f] = m.group(output_filter[f]['group'])
+                                try:
+                                    filter_results[f] = m.group(output_filter[f]['group'])
+                                except IndexError:
+                                    # User must have not included parenthases in their pattern
+                                    pass
                                 # No need to search for this pattern again in future lines
                                 pop_key = f
                                 break
