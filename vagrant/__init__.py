@@ -865,6 +865,15 @@ class Vagrant(object):
         # target is the VM name
         # type is the type of data, e.g. 'provider-name', 'box-version'
         # data is a (possibly comma separated) type-specific value, e.g. 'virtualbox', '0'
+        #
+        # strip plugin warnings prior to parsing:
+        # You're not using the latest version of the 'vagrant-openstack-provider' plugin.
+        # The latest version is 0.10.0, yours is 0.9.0. You should update to the latest
+        # version running the command :
+        #
+        #    $ vagrant plugin update vagrant-openstack-provider
+        plugin_regexp = re.compile('(?:[\r\n]|[^\r\n])*(?:[\r\n])(?=[\r\n]\d{10},)')
+        output = re.sub(plugin_regexp, '', output)
         parsed_lines = [line.split(',', 4) for line in output.splitlines() if line.strip()]
         # vagrant 1.8 adds additional fields that aren't required,
         # and will break parsing if included in the status lines.
