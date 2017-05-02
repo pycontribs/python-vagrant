@@ -227,8 +227,8 @@ class Vagrant(object):
                  env=None, out_cm=None, err_cm=None):
         '''
         root: a directory containing a file named Vagrantfile.  Defaults to
-        os.getcwd(). This is the directory and Vagrantfile that the Vagrant
-        instance will operate on.
+          os.getcwd(). This is the directory and Vagrantfile that the Vagrant
+          instance will operate on.
         env: a dict of environment variables (string keys and values) passed to
           the vagrant command subprocess or None.  Defaults to None.  If env is
           None, `subprocess.Popen` uses the current process environment.
@@ -733,9 +733,6 @@ class Vagrant(object):
         Remove Vagrant usage for unit testing
         '''
         # Parse box list output
-        # Cue snarky comment about how nice it would be if vagrant used JSON
-        # or even had a description of the machine readable output for each
-        # command
 
         boxes = []
         # initialize box values
