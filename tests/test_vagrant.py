@@ -520,6 +520,30 @@ def test_multivm_config():
         eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
+@with_setup(make_setup_vm(), teardown_vm)
+def test_ssh_command():
+    '''
+    Test executing a command via ssh on a vm.
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up()
+    output = v.ssh(command='echo hello')
+    assert output.strip() == 'hello'
+
+
+@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
+def test_ssh_command_multivm():
+    '''
+    Test executing a command via ssh on a specific vm
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up()
+    output = v.ssh(vm_name=VM_1, command='echo hello')
+    assert output.strip() == 'hello'
+    output = v.ssh(vm_name=VM_2, command='echo I like your hat')
+    assert output.strip() == 'I like your hat'
+
+
 def test_make_file_cm():
     filename = os.path.join(TD, 'test.log')
     if os.path.exists(filename):

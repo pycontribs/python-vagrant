@@ -4,6 +4,12 @@
 This document lists the changes (and individuals who contributed to those
 changes) for each release of python-vagrant.
 
+## To be released
+
+- Pull Request #54: Create ssh() method to run shell commands in a VM
+  Authors: Parker Thompson (https://github.com/mothran) and Todd DeLuca
+  (https://github.com/todddeluca)
+
 ## 0.5.14
 
 - Pull Request #51: Add support for the vagrant package command.
