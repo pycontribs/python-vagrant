@@ -993,19 +993,16 @@ class Vagrant(object):
             sp_args = dict(args=command, cwd=self.root, env=self.env,
                            stdout=subprocess.PIPE, stderr=err_fh, bufsize=1)
 
-            # Method to iterate over output lines depends on version of Python.
+            # Iterate over output lines.
             # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
-            if not py3:  # Python 2.x
-                p = subprocess.Popen(**sp_args)
-                with p.stdout:
-                    for line in iter(p.stdout.readline, b''):
-                        yield line
-                p.wait()
-            else:  # Python 3.0+
-                with subprocess.Popen(**sp_args) as p:
-                    for line in p.stdout:
-                        yield line
-
+            p = subprocess.Popen(**sp_args)
+            with p.stdout:
+                for line in iter(p.stdout.readline, b''):
+                    yield compat.decode(line) # if PY3 decode bytestrings
+            p.wait()
+            # Raise CalledProcessError for consistency with _call_vagrant_command
+            if p.returncode != 0:
+                raise subprocess.CalledProcessError(p.returncode, command)
 
 
 class SandboxVagrant(Vagrant):
