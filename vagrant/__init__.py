@@ -300,7 +300,7 @@ class Vagrant(object):
         self._call_vagrant_command(['init', box_name, box_url])
 
     def up(self, no_provision=False, provider=None, vm_name=None,
-           provision=None, provision_with=None):
+           provision=None, provision_with=None, output_filter=None):
         '''
         Launch the Vagrant box.
         vm_name=None: name of VM.
@@ -323,15 +323,21 @@ class Vagrant(object):
         no_provision_arg = '--no-provision' if no_provision else None
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
 
-        self._call_vagrant_command(['up', vm_name, no_provision_arg,
-                                   provision_arg, provider_arg,
-                                   prov_with_arg, providers_arg])
+        args = ['up', vm_name, no_provision_arg, provision_arg, provider_arg, prov_with_arg, providers_arg]
+        filter_results = None
+        if isinstance(output_filter, dict):
+            filter_results = self._filter_vagrant_command(args, output_filter)
+        else:
+            self._call_vagrant_command(args)
+
         try:
             self.conf(vm_name=vm_name)  # cache configuration
         except subprocess.CalledProcessError:
             # in multi-VM environments, up() can be used to start all VMs,
             # however vm_name is required for conf() or ssh_config().
             pass
+
+        return filter_results
 
     def provision(self, vm_name=None, provision_with=None):
         '''
@@ -345,7 +351,8 @@ class Vagrant(object):
         self._call_vagrant_command(['provision', vm_name, prov_with_arg,
                                    providers_arg])
 
-    def reload(self, vm_name=None, provision=None, provision_with=None):
+    def reload(self, vm_name=None, provision=None, provision_with=None,
+               output_filter=None):
         '''
         Quoting from Vagrant docs:
         > The equivalent of running a halt followed by an up.
@@ -362,8 +369,15 @@ class Vagrant(object):
         prov_with_arg = None if provision_with is None else '--provision-with'
         providers_arg = None if provision_with is None else ','.join(provision_with)
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
-        self._call_vagrant_command(['reload', vm_name, provision_arg,
-                                   prov_with_arg, providers_arg])
+
+        args = ['reload', vm_name, provision_arg, prov_with_arg, providers_arg]
+        filter_results = None
+        if isinstance(output_filter, dict):
+            filter_results = self._filter_vagrant_command(args, output_filter)
+        else:
+            self._call_vagrant_command(args)
+
+        return filter_results
 
     def suspend(self, vm_name=None):
         '''
@@ -953,6 +967,104 @@ class Vagrant(object):
         with self.err_cm() as err_fh:
             return compat.decode(subprocess.check_output(command, cwd=self.root,
                                                env=self.env, stderr=err_fh))
+
+    def _filter_vagrant_command(self, args, output_filter):
+        """Execute the Vagrant command, return matches to the output filters.
+
+        Output filter must have the following form:
+            {
+              'filter_name': {'pat': r'regex pattern',
+                              'group': <int group number to return>},
+              ...
+            }
+
+        The `group` key is actually optional, but defaults to 1 when omitted.
+
+        :param args: Arguments for the Vagrant command.
+        :param output_filter: Dictionary of output filters.
+        :type output_filter: dict
+        :return: Dictionary of results with the following form:
+            {'filter_name': 'matching result', ...}. If no match is found, the
+            value will be None.
+        :rtype: dict
+        """
+        assert isinstance(output_filter, dict)
+        py3 = sys.version_info > (3, 0)
+
+        # Create dictionary that will store the results from the filters
+        filter_results = dict.fromkeys(output_filter)
+
+        for f in output_filter.keys():
+            # Check the filter values, compile as regular expression objects if necessary
+            if not isinstance(output_filter[f]['pat'], type(re.compile(''))):
+                if py3 and isinstance(output_filter[f]['pat'], str):
+                    # In Python 3, the output from subprocess will be bytes, so the pattern has to be bytes as well
+                    # for it to match.
+                    output_filter[f]['pat'] = output_filter[f]['pat'].encode()
+                try:
+                    output_filter[f]['pat'] = re.compile(output_filter[f]['pat'])
+                except TypeError:
+                    raise TypeError('Output filters must have either a compiled regular expression or a regular '
+                                    'expression string stored in key ["pat"], got: {}'.
+                                    format(type(output_filter[f]['pat'])))
+
+            # Check that the group is an int, set to 1 if omitted
+            if output_filter[f].get('group') is None:
+                output_filter[f]['group'] = 1
+            elif not isinstance(output_filter[f]['group'], int):
+                raise TypeError('For output filters, value for key `group` must be an int, got {}'.
+                                format(type(output_filter[f]['group'])))
+
+        # Make subprocess command
+        command = self._make_vagrant_command(args)
+
+        # Don't override the user-specified output and error context managers
+        with self.out_cm() as out_fh, self.err_cm() as err_fh:
+            sp_args = dict(args=command, cwd=self.root, env=self.env,
+                           stdout=subprocess.PIPE, stderr=err_fh, bufsize=1)
+
+            # Parse command output for the specified filters. Method used depends on version of Python.
+            # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
+            if not py3:  # Python 2.x
+                p = subprocess.Popen(**sp_args)
+                with p.stdout:
+                    for line in iter(p.stdout.readline, b''):
+                        pop_key = None
+                        for f in output_filter.keys():
+                            m = re.search(output_filter[f]['pat'], line)
+                            if m:
+                                try:
+                                    filter_results[f] = m.group(output_filter[f]['group'])
+                                except IndexError:
+                                    # User must have not included parenthases in their pattern
+                                    pass
+                                # No need to search for this pattern again in future lines
+                                pop_key = f
+                                break
+                        if pop_key:
+                            output_filter.pop(pop_key)
+                        out_fh.write(line)
+                p.wait()
+            else:  # Python 3.0+
+                with subprocess.Popen(**sp_args) as p:
+                    for line in p.stdout:
+                        pop_key = None
+                        for f in output_filter.keys():
+                            m = re.search(output_filter[f]['pat'], line)
+                            if m:
+                                try:
+                                    filter_results[f] = m.group(output_filter[f]['group'])
+                                except IndexError:
+                                    # User must have not included parenthases in their pattern
+                                    pass
+                                # No need to search for this pattern again in future lines
+                                pop_key = f
+                                break
+                        if pop_key:
+                            output_filter.pop(pop_key)
+                        out_fh.write(line)
+
+        return filter_results
 
 
 class SandboxVagrant(Vagrant):
