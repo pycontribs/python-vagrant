@@ -728,6 +728,19 @@ class Vagrant(object):
         '''
         self._call_vagrant_command(['snapshot', 'delete', name])
 
+    def ssh(self, vm_name=None, command=None, extra_ssh_args=None):
+        '''
+        Execute a command via ssh on the vm specified.
+        command: The command to execute via ssh.
+        extra_ssh_args: Corresponds to '--' option in the vagrant ssh command
+        Returns the output of running the command.
+        '''
+        cmd = ['ssh', vm_name, '--command', command]
+        if extra_ssh_args is not None:
+            cmd += ['--', extra_ssh_args]
+
+        return self._run_vagrant_command(cmd)
+
     def _parse_box_list(self, output):
         '''
         Remove Vagrant usage for unit testing
