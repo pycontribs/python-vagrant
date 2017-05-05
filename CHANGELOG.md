@@ -9,6 +9,11 @@ changes) for each release of python-vagrant.
 - Pull Request #54: Create ssh() method to run shell commands in a VM
   Authors: Parker Thompson (https://github.com/mothran) and Todd DeLuca
   (https://github.com/todddeluca)
+- Pull Request #56: Return generator for `up` and `reload` output lines to
+  avoid having entire output in memory.
+  Authors: mmabey (https://github.com/mmabey) and Todd DeLuca
+  (https://github.com/todddeluca)
+  
 
 ## 0.5.14
 

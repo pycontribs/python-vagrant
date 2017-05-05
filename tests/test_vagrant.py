@@ -545,38 +545,28 @@ def test_ssh_command_multivm():
 
 
 @with_setup(make_setup_vm(), teardown_vm)
-def test_output_filter():
+def test_streaming_output():
     """
-    Test output filters with good input.
+    Test streaming output of up or reload.
     """
-    v = vagrant.Vagrant(TD, out_cm=vagrant.stdout_cm)
-    of = {'string_pat': {'pat': r"Importing base box '(\S+)'",
-                         'group': 1},
-          'compiled_pat': {'pat': re.compile(r'22 \(guest\) => (\d+) \(host\)'),
-                           'group': 1}
-          }
-    matches = v.up(output_filter=of)
+    test_string = 'Waiting for machine to boot.'
+    v = vagrant.Vagrant(TD)
 
-    assert matches['string_pat'] == TEST_BOX_NAME
+    streaming_up = False
+    for line in v.up(stream_output=True):
+        print('output line:', line)
+        if test_string in line:
+            streaming_up = True
 
-    assert matches['compiled_pat'] is not None  # Usually '2222', but may vary depending on the test env
+    assert streaming_up
 
+    streaming_reload = False
+    for line in v.reload(stream_output=True):
+        print('output line:', line)
+        if test_string in line:
+            streaming_reload = True
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_output_filter_fail():
-    """
-    Test output filters with bad input.
-    """
-    v = vagrant.Vagrant(TD, out_cm=vagrant.stdout_cm)
-    of = {'failing_test': {'pat': ['invalid', 'regex', 'pattern'],
-                           'group': 0}
-          }
-    try:
-        v.up(output_filter=of)
-    except TypeError:
-        pass
-    else:
-        assert False
+    assert streaming_reload
 
 
 def test_make_file_cm():
