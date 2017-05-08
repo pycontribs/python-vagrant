@@ -26,7 +26,7 @@ from . import compat
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.14'
+__version__ = '0.5.15'
 
 
 log = logging.getLogger(__name__)
@@ -300,17 +300,24 @@ class Vagrant(object):
         self._call_vagrant_command(['init', box_name, box_url])
 
     def up(self, no_provision=False, provider=None, vm_name=None,
-           provision=None, provision_with=None):
+           provision=None, provision_with=None, stream_output=False):
         '''
-        Launch the Vagrant box.
+        Invoke `vagrant up` to start a box or boxes, possibly streaming the
+        command output.
         vm_name=None: name of VM.
         provision_with: optional list of provisioners to enable.
         provider: Back the machine with a specific provider
         no_provision: if True, disable provisioning.  Same as 'provision=False'.
         provision: optional boolean.  Enable or disable provisioning.  Default
           behavior is to use the underlying vagrant default.
+        stream_output: if True, return a generator that yields each line of the
+          output of running the command.  Consume the generator or the
+          subprocess might hang.  if False, None is returned and the command
+          is run to completion without streaming the output.  Defaults to
+          False.
         Note: If provision and no_provision are not None, no_provision will be
         ignored.
+        returns: None or a generator yielding lines of output.
         '''
         provider_arg = '--provider=%s' % provider if provider else None
         prov_with_arg = None if provision_with is None else '--provision-with'
@@ -323,15 +330,14 @@ class Vagrant(object):
         no_provision_arg = '--no-provision' if no_provision else None
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
 
-        self._call_vagrant_command(['up', vm_name, no_provision_arg,
-                                   provision_arg, provider_arg,
-                                   prov_with_arg, providers_arg])
-        try:
-            self.conf(vm_name=vm_name)  # cache configuration
-        except subprocess.CalledProcessError:
-            # in multi-VM environments, up() can be used to start all VMs,
-            # however vm_name is required for conf() or ssh_config().
-            pass
+        args = ['up', vm_name, no_provision_arg, provision_arg, provider_arg, prov_with_arg, providers_arg]
+        if stream_output:
+            generator = self._stream_vagrant_command(args)
+        else:
+            self._call_vagrant_command(args)
+
+        self._cached_conf[vm_name] = None  # remove cached configuration
+        return generator if stream_output else None
 
     def provision(self, vm_name=None, provision_with=None):
         '''
@@ -345,25 +351,40 @@ class Vagrant(object):
         self._call_vagrant_command(['provision', vm_name, prov_with_arg,
                                    providers_arg])
 
-    def reload(self, vm_name=None, provision=None, provision_with=None):
+    def reload(self, vm_name=None, provision=None, provision_with=None,
+               stream_output=False):
         '''
         Quoting from Vagrant docs:
         > The equivalent of running a halt followed by an up.
-
-        > This command is usually required for changes made in the Vagrantfile to take effect. After making any modifications to the Vagrantfile, a reload should be called.
-
-        > The configured provisioners will not run again, by default. You can force the provisioners to re-run by specifying the --provision flag.
+        > This command is usually required for changes made in the Vagrantfile
+          to take effect. After making any modifications to the Vagrantfile, a
+          reload should be called.
+        > The configured provisioners will not run again, by default. You can
+          force the provisioners to re-run by specifying the --provision flag.
 
         provision: optional boolean.  Enable or disable provisioning.  Default
           behavior is to use the underlying vagrant default.
         provision_with: optional list of provisioners to enable.
           e.g. ['shell', 'chef_solo']
+        stream_output: if True, return a generator that yields each line of the
+          output of running the command.  Consume the generator or the
+          subprocess might hang.  if False, None is returned and the command
+          is run to completion without streaming the output.  Defaults to
+          False.
+        returns: None or a generator yielding lines of output.
         '''
         prov_with_arg = None if provision_with is None else '--provision-with'
         providers_arg = None if provision_with is None else ','.join(provision_with)
         provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
-        self._call_vagrant_command(['reload', vm_name, provision_arg,
-                                   prov_with_arg, providers_arg])
+
+        args = ['reload', vm_name, provision_arg, prov_with_arg, providers_arg]
+        if stream_output:
+            generator = self._stream_vagrant_command(args)
+        else:
+            self._call_vagrant_command(args)
+
+        self._cached_conf[vm_name] = None  # remove cached configuration
+        return generator if stream_output else None
 
     def suspend(self, vm_name=None):
         '''
@@ -953,6 +974,35 @@ class Vagrant(object):
         with self.err_cm() as err_fh:
             return compat.decode(subprocess.check_output(command, cwd=self.root,
                                                env=self.env, stderr=err_fh))
+
+    def _stream_vagrant_command(self, args):
+        """
+        Execute a vagrant command, returning a generator of the output lines.
+        Caller should consume the entire generator to avoid the hanging the
+        subprocess.
+
+        :param args: Arguments for the Vagrant command.
+        :return: generator that yields each line of the command stdout.
+        :rtype: generator iterator
+        """
+        py3 = sys.version_info > (3, 0)
+
+        # Make subprocess command
+        command = self._make_vagrant_command(args)
+        with self.err_cm() as err_fh:
+            sp_args = dict(args=command, cwd=self.root, env=self.env,
+                           stdout=subprocess.PIPE, stderr=err_fh, bufsize=1)
+
+            # Iterate over output lines.
+            # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
+            p = subprocess.Popen(**sp_args)
+            with p.stdout:
+                for line in iter(p.stdout.readline, b''):
+                    yield compat.decode(line) # if PY3 decode bytestrings
+            p.wait()
+            # Raise CalledProcessError for consistency with _call_vagrant_command
+            if p.returncode != 0:
+                raise subprocess.CalledProcessError(p.returncode, command)
 
 
 class SandboxVagrant(Vagrant):

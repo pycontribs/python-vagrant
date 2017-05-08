@@ -23,7 +23,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from nose.tools import eq_, ok_, with_setup
+from nose.tools import eq_, ok_, with_setup, assert_raises
 
 import vagrant
 from vagrant import compat
@@ -542,6 +542,34 @@ def test_ssh_command_multivm():
     assert output.strip() == 'hello'
     output = v.ssh(vm_name=VM_2, command='echo I like your hat')
     assert output.strip() == 'I like your hat'
+
+
+@with_setup(make_setup_vm(), teardown_vm)
+def test_streaming_output():
+    """
+    Test streaming output of up or reload.
+    """
+    test_string = 'Waiting for machine to boot.'
+    v = vagrant.Vagrant(TD)
+
+    with assert_raises(subprocess.CalledProcessError):
+        v.up(vm_name='incorrect-name')
+
+    streaming_up = False
+    for line in v.up(stream_output=True):
+        print('output line:', line)
+        if test_string in line:
+            streaming_up = True
+
+    assert streaming_up
+
+    streaming_reload = False
+    for line in v.reload(stream_output=True):
+        print('output line:', line)
+        if test_string in line:
+            streaming_reload = True
+
+    assert streaming_reload
 
 
 def test_make_file_cm():
