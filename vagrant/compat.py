@@ -21,4 +21,4 @@ def decode(value):
     :param value: Encoded bytes for Python 3 and `str` for Python 2.
     :return: Value as a text.
     """
-    return value.decode(locale.getpreferredencoding()) if not PY2 else value
+    return value.decode(sys.getdefaultencoding()) if not PY2 else value

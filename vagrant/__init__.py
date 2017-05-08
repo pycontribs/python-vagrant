@@ -704,6 +704,24 @@ class Vagrant(object):
 
         self._call_vagrant_command(cmd)
 
+    def ssh(self, vm_name=None, output=None, vagrantfile=None, ssh_cmd=None):
+        '''
+        Runs a command in the target via SSH and returns stdout.
+
+        vm_name=None: name of VM.
+        output=None: name of the file to output
+        vagrantfile=None: Vagrantfile to package with this box
+        ssh_cmd=None: ssh_cmd to run in vm
+        '''
+        cmd = ['ssh', vm_name]
+        if output is not None:
+            cmd += ['--output', output]
+        if vagrantfile is not None:
+            cmd += ['--vagrantfile', vagrantfile]
+        cmd += ["--command", ssh_cmd]
+
+        return self._run_vagrant_command(cmd)
+
     def snapshot_push(self):
         '''
         This takes a snapshot and pushes it onto the snapshot stack.
