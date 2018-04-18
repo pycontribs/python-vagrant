@@ -531,6 +531,43 @@ def test_ssh_command():
     assert output.strip() == 'hello'
 
 
+@with_setup(make_setup_vm(), teardown_vm)
+def test_ssh_command_one_option():
+    '''
+    Test executing a command via ssh on a vm with one extra ssh option
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up()
+    # Using an argument that won't change the behavior of ssh
+    output = v.ssh(command='echo hello', extra_ssh_args='-4')
+    assert output.strip() == 'hello'
+
+
+@with_setup(make_setup_vm(), teardown_vm)
+def test_ssh_command_one_option_with_parameter():
+    '''
+    Test executing a command via ssh on a vm with one extra ssh argument that takes a parmaeter.
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up()
+    # Using an argument that won't change the behavior of ssh
+    output = v.ssh(command='echo hello', extra_ssh_args='-l vagrant')
+    assert output.strip() == 'hello'
+
+
+@with_setup(make_setup_vm(), teardown_vm)
+def test_ssh_command_multiple_options():
+    '''
+    Test executing a command via ssh on a vm with two extra ssh arguments.
+    '''
+    v = vagrant.Vagrant(TD)
+    v.up()
+    # Using arguments that won't change the behavior of ssh
+    output = v.ssh(command='echo hello', extra_ssh_args='-l vagrant -4 -a')
+    assert output.strip() == 'hello'
+
+
+
 @with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
 def test_ssh_command_multivm():
     '''

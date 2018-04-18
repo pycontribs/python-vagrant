@@ -758,7 +758,7 @@ class Vagrant(object):
         '''
         cmd = ['ssh', vm_name, '--command', command]
         if extra_ssh_args is not None:
-            cmd += ['--', extra_ssh_args]
+            cmd += ['--'] + extra_ssh_args.split(' ')
 
         return self._run_vagrant_command(cmd)
 
