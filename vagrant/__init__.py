@@ -137,6 +137,7 @@ if get_vagrant_executable() is None:
 Status = collections.namedtuple('Status', ['name', 'state', 'provider'])
 Box = collections.namedtuple('Box', ['name', 'provider', 'version'])
 Plugin = collections.namedtuple('Plugin', ['name', 'version', 'system'])
+Machine = collections.namedtuple('Machine', ['id', 'provider', 'state', 'path'])
 
 
 #########################################################################
@@ -493,6 +494,24 @@ class Vagrant(object):
         output = self._run_vagrant_command(['status', '--machine-readable', vm_name])
         return self._parse_status(output)
 
+    def global_status(self):
+        '''
+        Return the results of a `vagrant global-status` call as a list of one or more
+        Machine objects.  A Machine contains the following attributes:
+
+        - id: The id of the VM.
+        - provider: The name of the VM provider, e.g. 'virtualbox'.
+        - state: The state of the underlying guest machine (i.e. VM).
+        - path: The path to the VM environment.
+
+        Example return values:
+
+            [Machine(id='231cgt4', provider='virtualbox', state='running', path='/tmp/a'),
+             Machine(id='7d7d7b8', provider='virtualbox', state='running', path='/tmp/b')]
+        '''
+        output = self._run_vagrant_command(['global-status'])
+        return self._parse_global_status(output)
+
     def _parse_status(self, output):
         '''
         Unit testing is so much easier when Vagrant is removed from the
@@ -511,6 +530,27 @@ class Vagrant(object):
             statuses.append(status)
 
         return statuses
+
+    def _parse_global_status(self, output):
+        '''
+        Parses the global status.
+        '''
+        machines = []
+        output = list(map(lambda line: line.strip(), output.splitlines()))
+        if '' not in output:
+            return []
+        for line in output[2:]:
+            if line == '':
+                break
+            machines.append(line)
+
+        machine_objects = []
+        for machine in machines:
+            machine_details = machine.split(' ')
+            machine_details = list(filter(None, machine_details))
+            machine_objects.append(Machine(id=machine_details[0], provider=machine_details[2], state=machine_details[3], path=machine_details[4]))
+
+        return machine_objects
 
     def conf(self, ssh_config=None, vm_name=None):
         '''
