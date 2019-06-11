@@ -26,7 +26,7 @@ from . import compat
 
 # python package version
 # should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = '0.5.15'
+__version__ = '0.5.16'
 
 
 log = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ def none_cm():
 
 def make_file_cm(filename, mode='a'):
     '''
-    Open a file for appending and yield the open filehandle.  Close the 
+    Open a file for appending and yield the open filehandle.  Close the
     filehandle after yielding it.  This is useful for creating a context
     manager for logging the output of a `Vagrant` instance.
 
@@ -208,7 +208,7 @@ class Vagrant(object):
     NOT_CREATED = 'not_created'  # vagrant destroy
     POWEROFF = 'poweroff'  # vagrant halt
     ABORTED = 'aborted'  # The VM is in an aborted state
-    SAVED = 'saved' # vagrant suspend
+    SAVED = 'saved'  # vagrant suspend
     # LXC statuses
     STOPPED = 'stopped'
     FROZEN = 'frozen'
@@ -253,7 +253,7 @@ class Vagrant(object):
         '''
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
         self._cached_conf = {}
-        self._vagrant_exe = None # cache vagrant executable path
+        self._vagrant_exe = None  # cache vagrant executable path
         self.env = env
         if out_cm is not None:
             self.out_cm = out_cm
@@ -280,7 +280,10 @@ class Vagrant(object):
         output = self._run_vagrant_command(['--version'])
         m = re.search(r'^Vagrant (?P<version>.+)$', output)
         if m is None:
-            raise Exception('Failed to parse vagrant --version output. output={!r}'.format(output))
+            raise Exception(
+                'Failed to parse vagrant --version output. output={!r}'.
+                format(output)
+            )
         return m.group('version')
 
     def init(self, box_name=None, box_url=None):
@@ -307,7 +310,7 @@ class Vagrant(object):
         vm_name=None: name of VM.
         provision_with: optional list of provisioners to enable.
         provider: Back the machine with a specific provider
-        no_provision: if True, disable provisioning.  Same as 'provision=False'.
+        no_provision: if True, disable provisioning. Same as 'provision=False'.
         provision: optional boolean.  Enable or disable provisioning.  Default
           behavior is to use the underlying vagrant default.
         stream_output: if True, return a generator that yields each line of the
@@ -321,16 +324,26 @@ class Vagrant(object):
         '''
         provider_arg = '--provider=%s' % provider if provider else None
         prov_with_arg = None if provision_with is None else '--provision-with'
-        providers_arg = None if provision_with is None else ','.join(provision_with)
+        providers_arg = None if provision_with is None else \
+            ','.join(provision_with)
 
         # For the sake of backward compatibility, no_provision is allowed.
         # However it is ignored if provision is set.
         if provision is not None:
             no_provision = None
         no_provision_arg = '--no-provision' if no_provision else None
-        provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
+        provision_arg = None if provision is None else '--provision' \
+            if provision else '--no-provision'
 
-        args = ['up', vm_name, no_provision_arg, provision_arg, provider_arg, prov_with_arg, providers_arg]
+        args = [
+            'up',
+            vm_name,
+            no_provision_arg,
+            provision_arg,
+            provider_arg,
+            prov_with_arg,
+            providers_arg
+        ]
         if stream_output:
             generator = self._stream_vagrant_command(args)
         else:
@@ -347,7 +360,8 @@ class Vagrant(object):
           e.g. ['shell', 'chef_solo']
         '''
         prov_with_arg = None if provision_with is None else '--provision-with'
-        providers_arg = None if provision_with is None else ','.join(provision_with)
+        providers_arg = None if provision_with is None \
+            else ','.join(provision_with)
         self._call_vagrant_command(['provision', vm_name, prov_with_arg,
                                    providers_arg])
 
@@ -374,8 +388,10 @@ class Vagrant(object):
         returns: None or a generator yielding lines of output.
         '''
         prov_with_arg = None if provision_with is None else '--provision-with'
-        providers_arg = None if provision_with is None else ','.join(provision_with)
-        provision_arg = None if provision is None else '--provision' if provision else '--no-provision'
+        providers_arg = None if provision_with is None \
+            else ','.join(provision_with)
+        provision_arg = None if provision is None else '--provision' \
+            if provision else '--no-provision'
 
         args = ['reload', vm_name, provision_arg, prov_with_arg, providers_arg]
         if stream_output:
@@ -434,7 +450,7 @@ class Vagrant(object):
 
         And for a single-VM environment:
 
-            [Status(name='default', state='not created', provider='virtualbox')]
+         [Status(name='default', state='not created', provider='virtualbox')]
 
         Possible states include, but are not limited to (since new states are
         being added as Vagrant evolves):
@@ -457,7 +473,7 @@ class Vagrant(object):
             1424098924,web,provider-name,virtualbox
             1424098924,web,state,running
             1424098924,web,state-human-short,running
-            1424098924,web,state-human-long,The VM is running. To stop this VM%!(VAGRANT_COMMA) you can run `vagrant halt` to\nshut it down forcefully%!(VAGRANT_COMMA) or you can run `vagrant suspend` to simply\nsuspend the virtual machine. In either case%!(VAGRANT_COMMA) to restart it again%!(VAGRANT_COMMA)\nsimply run `vagrant up`.
+            1424098924,web,state-human-long,The VM is running. To stop this VM%!(VAGRANT_COMMA) you can run `vagrant halt` to\nshut it down forcefully%!(VAGRANT_COMMA) or you can run `vagrant suspend` to simply\nsuspend the virtual machine. In either case%!(VAGRANT_COMMA) to restart it again%!(VAGRANT_COMMA)\nsimply run `vagrant up`.  # noqa: E501
             1424098924,db,provider-name,virtualbox
             1424098924,db,state,not_created
             1424098924,db,state-human-short,not created
@@ -490,7 +506,11 @@ class Vagrant(object):
             1424099094,,error-exit,Vagrant::Errors::NoEnvironmentError,A Vagrant environment or target machine is required to run this\ncommand. Run `vagrant init` to create a new Vagrant environment. Or%!(VAGRANT_COMMA)\nget an ID of a target machine from `vagrant global-status` to run\nthis command on. A final option is to change to a directory with a\nVagrantfile and to try again.
         '''
         # machine-readable output are CSV lines
-        output = self._run_vagrant_command(['status', '--machine-readable', vm_name])
+        output = self._run_vagrant_command([
+            'status',
+            '--machine-readable',
+            vm_name
+        ])
         return self._parse_status(output)
 
     def _parse_status(self, output):
@@ -684,7 +704,11 @@ class Vagrant(object):
         value (the 2nd column).
         '''
         # machine-readable output are CSV lines
-        output = self._run_vagrant_command(['box', 'list', '--machine-readable'])
+        output = self._run_vagrant_command([
+            'box',
+            'list',
+            '--machine-readable'
+        ])
         return self._parse_box_list(output)
 
     def package(self, vm_name=None, base=None, output=None, vagrantfile=None):
@@ -712,7 +736,8 @@ class Vagrant(object):
 
     def snapshot_pop(self):
         '''
-        This command is the inverse of vagrant snapshot push: it will restore the pushed state.
+        This command is the inverse of vagrant snapshot push: it will restore
+        the pushed state.
         '''
         NO_SNAPSHOTS_PUSHED = 'No pushed snapshot found!'
         output = self._run_vagrant_command(['snapshot', 'pop'])
@@ -722,7 +747,8 @@ class Vagrant(object):
     def snapshot_save(self, name):
         '''
         This command saves a new named snapshot.
-        If this command is used, the push and pop subcommands cannot be safely used.
+        If this command is used, the push and pop subcommands cannot be safely
+        used.
         '''
         self._call_vagrant_command(['snapshot', 'save', name])
 
@@ -771,14 +797,19 @@ class Vagrant(object):
         boxes = []
         # initialize box values
         name = provider = version = None
-        for timestamp, target, kind, data in self._parse_machine_readable_output(output):
+        for timestamp, target, kind, data in \
+                self._parse_machine_readable_output(output):
             if kind == 'box-name':
                 # finish the previous box, if any
                 if name is not None:
-                    boxes.append(Box(name=name, provider=provider, version=version))
+                    boxes.append(Box(
+                        name=name,
+                        provider=provider,
+                        version=version)
+                    )
 
                 # start a new box
-                name = data # box name
+                name = data  # box name
                 provider = version = None
             elif kind == 'box-provider':
                 provider = data
@@ -791,12 +822,23 @@ class Vagrant(object):
 
         return boxes
 
-    def box_update(self, name, provider):
+    def box_update(self, name=None, provider='virtualbox'):
         '''
-        Updates the box matching name and provider. It is an error if no box
-        matches name and provider.
+        Updates the box matching name and provider.
         '''
-        self._call_vagrant_command(['box', 'update', name, provider])
+        self._call_vagrant_command(
+            [
+                'box', 'update', name, '--provider', provider
+            ])
+
+    def box_prune(self, provider='virtualbox'):
+        '''
+        Prune vagrant boxes
+        '''
+        self._call_vagrant_command(
+            [
+                'box', 'prune', '--provider', provider
+            ])
 
     def box_remove(self, name, provider):
         '''
@@ -830,15 +872,19 @@ class Vagrant(object):
             1424145521,,plugin-name,sahara
             1424145521,sahara,plugin-version,0.0.16
             1424145521,,plugin-name,vagrant-share
-            1424145521,vagrant-share,plugin-version,1.1.3%!(VAGRANT_COMMA) system
+            1424145521,vagrant-share,plugin-version,1.1.3%!(VAGRANT_COMMA) system  # noqa: E501
 
-        Note that the information for each plugin seems grouped within 
+        Note that the information for each plugin seems grouped within
         consecutive lines.  That information is also associated sometimes with
         an empty target name and sometimes with the plugin name as the target
-        name.  Note also that a plugin version can be like '0.0.16' or 
+        name.  Note also that a plugin version can be like '0.0.16' or
         '1.1.3, system'.
         '''
-        output = self._run_vagrant_command(['plugin', 'list', '--machine-readable'])
+        output = self._run_vagrant_command([
+            'plugin',
+            'list',
+            '--machine-readable'
+        ])
         return self._parse_plugin_list(output)
 
     def _parse_plugin_list(self, output):
@@ -852,14 +898,19 @@ class Vagrant(object):
         name = None
         version = None
         system = False
-        for timestamp, target, kind, data in self._parse_machine_readable_output(output):
+        for timestamp, target, kind, data \
+                in self._parse_machine_readable_output(output):
             if kind == 'plugin-name':
                 # finish the previous plugin, if any
                 if name is not None:
-                    plugins.append(Plugin(name=name, version=version, system=system))
+                    plugins.append(Plugin(
+                        name=name,
+                        version=version,
+                        system=system)
+                    )
 
                 # start a new plugin
-                name = data # plugin name
+                name = data  # plugin name
                 version = None
                 system = False
             elif kind == 'plugin-version':
@@ -878,7 +929,8 @@ class Vagrant(object):
 
     def _parse_machine_readable_output(self, output):
         '''
-        param output: a string containing the output of a vagrant command with the `--machine-readable` option.
+        param output: a string containing the output of a vagrant command with
+        the `--machine-readable` option.
 
         returns: a dict mapping each 'target' in the machine readable output to
         a dict.  The dict of each target, maps each target line type/kind to
@@ -895,12 +947,15 @@ class Vagrant(object):
         # each line is a tuple of (timestamp, target, type, data)
         # target is the VM name
         # type is the type of data, e.g. 'provider-name', 'box-version'
-        # data is a (possibly comma separated) type-specific value, e.g. 'virtualbox', '0'
-        parsed_lines = [line.split(',', 4) for line in output.splitlines() if line.strip()]
+        # data is a (possibly comma separated) type-specific value,
+        # e.g. 'virtualbox', '0'
+        parsed_lines = [
+            line.split(',', 4) for line in output.splitlines() if line.strip()
+        ]
         # vagrant 1.8 adds additional fields that aren't required,
         # and will break parsing if included in the status lines.
         # filter them out pending future implementation.
-        parsed_lines = list(filter(lambda x: x[2] not in ["metadata", "ui", "action"], parsed_lines))
+        parsed_lines = list(filter(lambda x: x[2] not in ["metadata", "ui", "action"], parsed_lines))  # noqa: E501
         return parsed_lines
 
     def _parse_config(self, ssh_config):
@@ -931,7 +986,8 @@ class Vagrant(object):
         for line in ssh_config.splitlines():
             if line.strip().startswith('Host ') and not started_parsing:
                 started_parsing = True
-            if not started_parsing or not line.strip() or line.strip().startswith('#'):
+            if not started_parsing or not line.strip() or \
+                    line.strip().startswith('#'):
                 continue
             key, value = line.strip().split(None, 1)
             # Remove leading and trailing " from the values
@@ -972,8 +1028,14 @@ class Vagrant(object):
         # Make subprocess command
         command = self._make_vagrant_command(args)
         with self.err_cm() as err_fh:
-            return compat.decode(subprocess.check_output(command, cwd=self.root,
-                                               env=self.env, stderr=err_fh))
+            return compat.decode(
+                subprocess.check_output(
+                    command,
+                    cwd=self.root,
+                    env=self.env,
+                    stderr=err_fh
+                )
+            )
 
     def _stream_vagrant_command(self, args):
         """
@@ -985,7 +1047,7 @@ class Vagrant(object):
         :return: generator that yields each line of the command stdout.
         :rtype: generator iterator
         """
-        py3 = sys.version_info > (3, 0)
+        sys.version_info > (3, 0)
 
         # Make subprocess command
         command = self._make_vagrant_command(args)
@@ -994,20 +1056,22 @@ class Vagrant(object):
                            stdout=subprocess.PIPE, stderr=err_fh, bufsize=1)
 
             # Iterate over output lines.
-            # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
+            # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359  # noqa: E501
             p = subprocess.Popen(**sp_args)
             with p.stdout:
                 for line in iter(p.stdout.readline, b''):
-                    yield compat.decode(line) # if PY3 decode bytestrings
+                    yield compat.decode(line)  # if PY3 decode bytestrings
             p.wait()
-            # Raise CalledProcessError for consistency with _call_vagrant_command
+            # Raise CalledProcessError for consistency with
+            # _call_vagrant_command
             if p.returncode != 0:
                 raise subprocess.CalledProcessError(p.returncode, command)
 
 
 class SandboxVagrant(Vagrant):
     '''
-    Support for sandbox mode using the Sahara gem (https://github.com/jedi4ever/sahara).
+    Support for sandbox mode using the Sahara gem
+    (https://github.com/jedi4ever/sahara).
     '''
 
     def _run_sandbox_command(self, args):
