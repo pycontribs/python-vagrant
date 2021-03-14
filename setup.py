@@ -17,6 +17,7 @@ setup(
     description = 'Python bindings for interacting with Vagrant virtual machines.',
     long_description = open(os.path.join(os.path.dirname(__file__),
                                          'README.md')).read(),
+    long_description_content_type='text/markdown',
     keywords = 'python virtual machine box vagrant virtualbox vagrantfile',
     url = 'https://github.com/todddeluca/python-vagrant',
     author = 'Todd Francis DeLuca',
