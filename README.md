@@ -188,11 +188,11 @@ downloading boxes and starting and stopping virtual machines several times.
 
 Run the tests from the top-level directory of the repository:
 
-    nosetests
+    tox -e py
 
 Here is an example of running an individual test:
 
-    nosetests tests.test_vagrant:test_boxes
+    tox -e py -- -k tests.test_vagrant:test_boxes
 
 Manual test of functionality for controlling where the vagrant subcommand
 output is sent -- console or devnull:

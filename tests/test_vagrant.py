@@ -4,7 +4,7 @@ Introduces setup and teardown routines suitable for testing Vagrant.
 Note that the tests can take few minutes to run because of the time
 required to bring up/down the VM.
 
-Most test functions (decorated with `@with_setup`) will actually bring the VM
+Most test functions using `vm` fixture will actually bring the VM
 up/down. This is the "proper" way of doing things (isolation).  However, the
 downside of such a workflow is that it increases the execution time of the test
 suite.
@@ -23,7 +23,11 @@ import subprocess
 import sys
 import tempfile
 import time
-from nose.tools import eq_, ok_, with_setup, assert_raises
+import pytest
+from _pytest.fixtures import FixtureRequest
+from typing import Generator
+
+# from nose.tools import eq_, ok_, assert_raises
 
 import vagrant
 from vagrant import compat
@@ -113,7 +117,8 @@ def teardown():
 # TEST-LEVEL SETUP AND TEARDOWN
 
 
-def make_setup_vm(vagrantfile=None):
+@pytest.fixture(scope="module")
+def vm(request: FixtureRequest, vagrantfile=None) -> Generator[None, None, None]:
     """
     Make and return a function that sets up the temporary directory with a
     Vagrantfile.  By default, use VM_VAGRANTFILE.
@@ -122,17 +127,10 @@ def make_setup_vm(vagrantfile=None):
     if vagrantfile is None:
         vagrantfile = VM_VAGRANTFILE
 
-    def setup_vm():
-        shutil.copy(vagrantfile, os.path.join(TD, "Vagrantfile"))
-
-    return setup_vm
-
-
-def teardown_vm():
-    """
-    Attempts to destroy every VM in the Vagrantfile in the temporary directory, TD.
-    It is not an error if a VM has already been destroyed.
-    """
+    shutil.copy(vagrantfile, os.path.join(TD, "Vagrantfile"))
+    yield
+    # teardown: Attempts to destroy every VM in the Vagrantfile in the temporary directory, TD.
+    # It is not an error if a VM has already been destroyed.
     try:
         # Try to destroy any vagrant box that might be running.
         subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
@@ -143,8 +141,7 @@ def teardown_vm():
         os.unlink(os.path.join(TD, "Vagrantfile"))
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_parse_plugin_list():
+def test_parse_plugin_list(vm):
     """
     Test the parsing the output of the `vagrant plugin list` command.
     """
@@ -165,8 +162,7 @@ def test_parse_plugin_list():
     )
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_parse_box_list():
+def test_parse_box_list(vm):
     """
     Test the parsing the output of the `vagrant box list` command.
     """
@@ -191,8 +187,7 @@ def test_parse_box_list():
     )
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_parse_status():
+def test_parse_status(vm):
     """
     Test the parsing the output of the `vagrant status` command.
     """
@@ -216,8 +211,7 @@ def test_parse_status():
     )
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_parse_aws_status():
+def test_parse_aws_status(vm):
     """
     Test the parsing the output of the `vagrant status` command for an aws instance.
     """
@@ -249,8 +243,7 @@ def test_parse_aws_status():
     )
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_vm_status():
+def test_vm_status(vm):
     """
     Test whether vagrant.status() correctly reports state of the VM, in a
     single-VM environment.
@@ -278,8 +271,7 @@ def test_vm_status():
     ), "After destroying status should be vagrant.NOT_CREATED"
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_vm_lifecycle():
+def test_vm_lifecycle(vm):
     """
     Test methods controlling the VM - init(), up(), halt(), destroy().
     """
@@ -304,8 +296,7 @@ def test_vm_lifecycle():
     assert v.NOT_CREATED == v.status()[0].state
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_vm_config():
+def test_vm_config(vm):
     """
     Test methods retrieving ssh config settings, like user, hostname, and port.
     """
@@ -348,8 +339,7 @@ def test_vm_config():
         eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_vm_sandbox_mode():
+def test_vm_sandbox_mode(vm):
     """
     Test methods for enabling/disabling the sandbox mode
     and committing/rolling back changes.
@@ -460,8 +450,7 @@ def test_vm_sandbox_mode():
     )
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_boxes():
+def test_boxesvm():
     """
     Test methods for manipulating boxes - adding, listing, removing.
     """
@@ -501,8 +490,7 @@ def test_boxes():
     )
 
 
-@with_setup(make_setup_vm(SHELL_PROVISION_VAGRANTFILE), teardown_vm)
-def test_provisioning():
+def test_provisioning(vm, vagrantfile=SHELL_PROVISION_VAGRANTFILE):
     """
     Test provisioning support.  The tested provision config creates a file on
     the vm with the contents 'foo'.
@@ -519,8 +507,7 @@ def test_provisioning():
     eq_(test_file_contents, "foo", "The test file should contain 'foo'")
 
 
-@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
-def test_multivm_lifecycle():
+def test_multivm_lifecycle(vm, vagrant_file=MULTIVM_VAGRANTFILE):
     v = vagrant.Vagrant(TD)
 
     # test getting multiple statuses at once
@@ -553,8 +540,7 @@ def test_multivm_lifecycle():
     eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
 
 
-@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
-def test_multivm_config():
+def test_multivm_config(vm, vagrantfile=MULTIVM_VAGRANTFILE):
     """
     Test methods retrieving configuration settings.
     """
@@ -597,8 +583,7 @@ def test_multivm_config():
         eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_ssh_command():
+def test_ssh_command(vm):
     """
     Test executing a command via ssh on a vm.
     """
@@ -608,8 +593,7 @@ def test_ssh_command():
     assert output.strip() == "hello"
 
 
-@with_setup(make_setup_vm(MULTIVM_VAGRANTFILE), teardown_vm)
-def test_ssh_command_multivm():
+def test_ssh_command_multivm(vm, vagrantfile=MULTIVM_VAGRANTFILE):
     """
     Test executing a command via ssh on a specific vm
     """
@@ -621,15 +605,14 @@ def test_ssh_command_multivm():
     assert output.strip() == "I like your hat"
 
 
-@with_setup(make_setup_vm(), teardown_vm)
-def test_streaming_output():
+def test_streaming_output(vm):
     """
     Test streaming output of up or reload.
     """
     test_string = "Waiting for machine to boot."
     v = vagrant.Vagrant(TD)
 
-    with assert_raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError):
         v.up(vm_name="incorrect-name")
 
     streaming_up = False

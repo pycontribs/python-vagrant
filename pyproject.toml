@@ -18,7 +18,6 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 profile = "black"
 
 [tool.pytest.ini_options]
-addopts = "--no-success-flaky-report"
 # ensure we treat warnings as error
 filterwarnings = ["error"]
 
