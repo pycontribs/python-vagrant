@@ -50,9 +50,9 @@ SHELL_PROVISION_VAGRANTFILE = os.path.join(
 VM_1 = "web"
 VM_2 = "db"
 # name of the base box used for testing
-TEST_BOX_NAME = "python-vagrant-base"
-# url of the box file used for testing
-TEST_BOX_URL = "http://files.vagrantup.com/lucid32.box"
+TEST_BOX_URL = "generic/alpine310"
+TEST_BOX_NAME = TEST_BOX_URL
+TEST_PROVIDER = "virtualbox"
 # temp dir for testing.
 TD = None
 
@@ -88,8 +88,7 @@ def setup():
     already set up.
 
     Creates a directory in a temporary location and checks if there is a base
-    box under the `TEST_BOX_NAME`. If not, downloads it from `TEST_BOX_URL` and
-    adds to Vagrant.
+    box under the `TEST_BOX_NAME`. If needed it downloads it.
 
     This is ran once before the first test (global setup).
     """
@@ -99,7 +98,7 @@ def setup():
     sys.stderr.write("test temp dir: {}\n".format(TD))
     boxes = list_box_names()
     if TEST_BOX_NAME not in boxes:
-        cmd = "vagrant box add {} {}".format(TEST_BOX_NAME, TEST_BOX_URL)
+        cmd = f"vagrant box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
         subprocess.check_call(cmd, shell=True)
 
 
