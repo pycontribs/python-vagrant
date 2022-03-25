@@ -2,7 +2,7 @@
 
 Python-vagrant is a python module that provides a _thin_ wrapper around the
 `vagrant` command line executable, allowing programmatic control of Vagrant
-virtual machines (boxes).  This module is useful for:
+virtual machines (boxes). This module is useful for:
 
 - Starting a Vagrant virtual machine (VM) (`up`).
 - Terminating a Vagrant VM (`destroy`).
@@ -17,34 +17,31 @@ virtual machines (boxes).  This module is useful for:
 - Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
 
 This project began because I wanted python bindings for Vagrant so I could
-programmatically access my vagrant box using Fabric.  Drop me a line to let me
-know how you use python-vagrant.  I'd love to share more use cases.  -Todd DeLuca
-
+programmatically access my vagrant box using Fabric. Drop me a line to let me
+know how you use python-vagrant. I'd love to share more use cases. -Todd DeLuca
 
 ## Versioning and API Stability
 
-This package is _beta_ and its API is not guaranteed to be stable.  The API
+This package is _beta_ and its API is not guaranteed to be stable. The API
 attempts to be congruent with the `vagrant` API terminology, to facilitate
-knowledge transfer for users already familiar with Vagrant.  Over time, the
+knowledge transfer for users already familiar with Vagrant. Over time, the
 python-vagrant API has changed to better match the underling `vagrant` CLI and
 to evolve with the changes in that CLI.
 
-The package version numbering is in the form `0.X.Y`.  The initial `0` reflects
-the _beta_ nature of this project.  The number `X` is incremented when
-backwards-incompatible changes occur.  The number `Y` is incremented when
+The package version numbering is in the form `0.X.Y`. The initial `0` reflects
+the _beta_ nature of this project. The number `X` is incremented when
+backwards-incompatible changes occur. The number `Y` is incremented when
 backwards-compatible features or bug fixes are added.
-
 
 ## Requirements
 
-- Vagrant 1.4 or greater (currently tested with 1.7.2).  Using the latest
+- Vagrant 1.4 or greater (currently tested with 1.7.2). Using the latest
   version of Vagrant is strongly recommended.
 - Vagrant requires VirtualBox, VMWare, or another supported provider.
 - Python 2.7 (the only version this package has been tested with.) or Python
   3.3 or higher.
-- The Sahara gem for Vagrant is optional.  It will allow you to use
+- The Sahara gem for Vagrant is optional. It will allow you to use
   `SandboxVagrant`.
-
 
 ## Installation
 
@@ -62,7 +59,6 @@ Clone and install python-vagrant
     git clone git@github.com:todddeluca/python-vagrant.git
     cd python-vagrant
     python setup.py install
-
 
 ## Usage
 
@@ -100,13 +96,13 @@ Another example showing how to use vagrant multi-vm feature with fabric:
             run("echo hello")
 
 By default python vagrant instances are quiet, meaning that they capture stdout
-and stderr.  For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
+and stderr. For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
 Set `quiet_stderr=False` for an even louder version.
 
 ### Interacting With the Vagrant Subprocess
 
 The `Vagrant` class works by executing `vagrant` commands in a subprocess and
-interpreting the output.  Depending on the needs of the user, the communication
+interpreting the output. Depending on the needs of the user, the communication
 to and from the subprocess can be tailored by altering its environment and
 where it sends its stdout and stderr.
 
@@ -114,7 +110,7 @@ where it sends its stdout and stderr.
 
 The stdout and stderr of the underlying vagrant process can be silenced by
 using the `out_cm` and `err_cm` parameters, or by using the `quiet_stdout` and
-`quiet_stderr` parameters of `Vagrant.__init__`.  
+`quiet_stderr` parameters of `Vagrant.__init__`.
 
 Using `out_cm` and `err_cm` to redirect stdout and stderr to `/dev/null`:
 
@@ -132,7 +128,7 @@ These are functionally equivalent.
 #### Logging the Stdout or Stderr of the Vagrant Subprocess
 
 A user might wish to direct the stdout and stderr of a vagrant subprocess to
-a file, perhaps to log and analyze the results of an automated process.  This
+a file, perhaps to log and analyze the results of an automated process. This
 can be accomplished using the `out_cm` and `err_cm` parameters of
 `Vagrant.__init__`.
 
@@ -183,12 +179,11 @@ https://github.com/todddeluca/python-vagrant.
 Please see CHANGELOG.md for a detailed list of contributions and authors.
 
 When making a pull request, please include unit tests that test your changes
-and make sure any existing tests still work.  See the Testing section below.
-
+and make sure any existing tests still work. See the Testing section below.
 
 ## Testing
 
-Running the full suite of tests might take 10 minutes or so.  It involves
+Running the full suite of tests might take 10 minutes or so. It involves
 downloading boxes and starting and stopping virtual machines several times.
 
 Run the tests from the top-level directory of the repository:
@@ -198,7 +193,6 @@ Run the tests from the top-level directory of the repository:
 Here is an example of running an individual test:
 
     nosetests tests.test_vagrant:test_boxes
-
 
 Manual test of functionality for controlling where the vagrant subcommand
 output is sent -- console or devnull:
@@ -220,6 +214,4 @@ output is sent -- console or devnull:
     >>> # Demonstrate a quiet Vagrant using devnull_cm directly
     ... v4 = vagrant.Vagrant(vagrantfile, out_cm=vagrant.devnull_cm)
     >>> v4.destroy() # output to console
-    >>> 
-
-
+    >>>
