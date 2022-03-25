@@ -29,6 +29,7 @@ jobs:
             os: ubuntu-20.04
             python-version: 3.7
             unit: false
+            skip_vagrant: true
           - tox_env: py37
             os: macos-10.15
             python-version: 3.7
@@ -48,6 +49,12 @@ jobs:
       FORCE_COLOR: 1
 
     steps:
+      - name: Check vagrant presence
+        run: |
+          vagrant version
+          vagrant plugin list
+        if: ${{ ! matrix.skip_vagrant }}
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # needed by setuptools-scm
