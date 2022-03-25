@@ -13,6 +13,3 @@ Vagrant.configure("2") do |config|
     db.vm.network :forwarded_port, guest: 3306, host: 3306
   end
 end
-
-
-
