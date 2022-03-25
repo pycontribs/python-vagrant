@@ -15,3 +15,4 @@ Vagrantfile
 /build/
 /dist/
 /python_vagrant.egg-info/
+*.egg-info/
