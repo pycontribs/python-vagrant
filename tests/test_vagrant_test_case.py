@@ -9,10 +9,15 @@ from vagrant.test import VagrantTestCase
 
 
 def get_vagrant_root(test_vagrant_root_path):
-    return os.path.dirname(os.path.realpath(__file__)) + '/vagrantfiles/' + test_vagrant_root_path
+    return (
+        os.path.dirname(os.path.realpath(__file__))
+        + "/vagrantfiles/"
+        + test_vagrant_root_path
+    )
 
-SINGLE_BOX = get_vagrant_root('single_box')
-MULTI_BOX = get_vagrant_root('multi_box')
+
+SINGLE_BOX = get_vagrant_root("single_box")
+MULTI_BOX = get_vagrant_root("multi_box")
 
 
 class AllMultiBoxesTests(VagrantTestCase):
@@ -39,7 +44,7 @@ class SingleBoxTests(VagrantTestCase):
 class SpecificMultiBoxTests(VagrantTestCase):
     """Tests for a multiple box setup where only some of the boxes are to be on"""
 
-    vagrant_boxes = ['precise32']
+    vagrant_boxes = ["precise32"]
     vagrant_root = MULTI_BOX
 
     def test_all_boxes_up(self):
