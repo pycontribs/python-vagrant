@@ -1,0 +1,106 @@
+name: tox
+
+on:
+  create: # is used for publishing to PyPI and TestPyPI
+    tags: # any tag regardless of its name, no branches
+      - "**"
+  push: # only publishes pushes to the main branch to TestPyPI
+    branches: # any integration branch but not tag
+      - "main"
+  pull_request:
+  release:
+    types:
+      - published # It seems that you can publish directly without creating
+  workflow_call:
+
+jobs:
+  unit:
+    name: ${{ matrix.tox_env }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+        os:
+          # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
+          - ubuntu-20.04
+        include:
+          - tox_env: py37
+            os: ubuntu-20.04
+            python-version: 3.7
+          - tox_env: py38
+            os: ubuntu-20.04
+            python-version: 3.8
+          - tox_env: py39
+            os: ubuntu-20.04
+            python-version: 3.9
+          - tox_env: py310
+            os: ubuntu-20.04
+            python-version: "3.10"
+
+    env:
+      TOX_PARALLEL_NO_SPINNER: 1
+      TOXENV: ${{ matrix.tox_env }}
+      FORCE_COLOR: 1
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # needed by setuptools-scm
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Pip cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-${{ matrix.tox_env }}-pip-${{ hashFiles('constraints.txt', 'setup.cfg', 'tox.ini', 'pyproject.toml', '.pre-commit-config.yaml', 'pytest.ini') }}
+
+      - name: Install tox
+        run: python3 -m pip install --upgrade tox 'coverage[toml]'
+
+      - name: Initialize tox envs
+        run: python3 -m tox --notest --skip-missing-interpreters false -vv
+
+      - name: "tox -e ${{ matrix.tox_env }}"
+        run: python3 -m tox
+
+      - name: Combine coverage data
+        # produce a single .coverage file at repo root
+        run: coverage combine .tox/.coverage.*
+
+      - name: Upload coverage data
+        uses: codecov/codecov-action@v1
+        with:
+          name: ${{ matrix.tox_env }}
+
+      - name: Archive logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs.zip
+          path: .tox/**/log/
+        # https://github.com/actions/upload-artifact/issues/123
+        continue-on-error: true
+
+      - name: Report junit failures
+        uses: shyim/junit-report-annotations-action@3d2e5374f2b13e70f6f3209a21adfdbc42c466ae
+        with:
+          path: .tox/junit.*.xml
+        if: always()
+
+  check: # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs:
+      - unit
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
