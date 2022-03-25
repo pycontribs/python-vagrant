@@ -18,7 +18,6 @@ jobs:
       TOX_PARALLEL_NO_SPINNER: 1
 
     steps:
-
       - name: Switch to using Python 3.8 by default
         uses: actions/setup-python@v2
         with:
