@@ -132,7 +132,7 @@ def get_vagrant_executable():
 
 
 if get_vagrant_executable() is None:
-    log.warn(VAGRANT_NOT_FOUND_WARNING)
+    log.warning(VAGRANT_NOT_FOUND_WARNING)
 
 
 # Classes for listings of Statuses, Boxes, and Plugins
