@@ -170,7 +170,7 @@ def none_cm():
 
 def make_file_cm(filename, mode='a'):
     '''
-    Open a file for appending and yield the open filehandle.  Close the 
+    Open a file for appending and yield the open filehandle.  Close the
     filehandle after yielding it.  This is useful for creating a context
     manager for logging the output of a `Vagrant` instance.
 
@@ -832,10 +832,10 @@ class Vagrant(object):
             1424145521,,plugin-name,vagrant-share
             1424145521,vagrant-share,plugin-version,1.1.3%!(VAGRANT_COMMA) system
 
-        Note that the information for each plugin seems grouped within 
+        Note that the information for each plugin seems grouped within
         consecutive lines.  That information is also associated sometimes with
         an empty target name and sometimes with the plugin name as the target
-        name.  Note also that a plugin version can be like '0.0.16' or 
+        name.  Note also that a plugin version can be like '0.0.16' or
         '1.1.3, system'.
         '''
         output = self._run_vagrant_command(['plugin', 'list', '--machine-readable'])

@@ -52,7 +52,7 @@ TD = None
 
 def list_box_names():
     '''
-    Return a list of the currently installed vagrant box names.  This is 
+    Return a list of the currently installed vagrant box names.  This is
     implemented outside of `vagrant.Vagrant`, so that it will still work
     even if the `Vagrant.box_list()` implementation is broken.
     '''

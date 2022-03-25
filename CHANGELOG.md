@@ -13,7 +13,7 @@ changes) for each release of python-vagrant.
   avoid having entire output in memory.
   Authors: mmabey (https://github.com/mmabey) and Todd DeLuca
   (https://github.com/todddeluca)
-  
+
 
 ## 0.5.14
 
@@ -108,7 +108,7 @@ or higher.
 
 - Add resume command.
   Author: Renat Zaripov (https://github.com/rrzaripov)
-  
+
 ## 0.5.1
 
 - Find the correct executable on Cygwin systems.  See `which` and
@@ -274,7 +274,7 @@ on Windows:
 This release contains backwards-incompatible changes related to the changes in
 Vagrant 1.1+.  Vagrant 1.1 introduces the concept of providers (like virtualbox
 or vmware_fusion) which affect the API of `vagrant box` commands and the output
-of `vagrant status` (and other commands).  
+of `vagrant status` (and other commands).
 
 New functionality and bug fixes:
 
@@ -313,7 +313,7 @@ This release incorporates numerous changes from a couple of forks on github,
 https://github.com/kamilgrymuza/python-vagrant and
 https://github.com/nithinbose87/python-vagrant.
 
-- A rewritten test suite allowing easier addition of new features.  
+- A rewritten test suite allowing easier addition of new features.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
 - The init() method which initialized the VM based on the named base box.
   Author: Kamil Grymuza (https://github.com/kamilgrymuza).
