@@ -165,17 +165,15 @@ def test_parse_box_list(vm):
     """
     Test the parsing the output of the `vagrant box list` command.
     """
-    listing = """1424141572,,box-name,precise64
-1424141572,,box-provider,virtualbox
+    listing = """ 1424141572,,box-provider,virtualbox
 1424141572,,box-version,0
-1424141572,,box-name,python-vagrant-base
+1424141572,,box-name,generic/alpine315
 1424141572,,box-provider,virtualbox
 1424141572,,box-version,0
 """
     # Can compare tuples to Box class b/c Box is a collections.namedtuple.
     goal = [
-        ("precise64", "virtualbox", "0"),
-        ("python-vagrant-base", "virtualbox", "0"),
+        (TEST_BOX_NAME, "virtualbox", "0"),
     ]
     v = vagrant.Vagrant(TD)
     parsed = v._parse_box_list(listing)
