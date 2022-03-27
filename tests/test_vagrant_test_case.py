@@ -44,7 +44,7 @@ class SingleBoxTests(VagrantTestCase):
 class SpecificMultiBoxTests(VagrantTestCase):
     """Tests for a multiple box setup where only some of the boxes are to be on"""
 
-    vagrant_boxes = ["precise32"]
+    vagrant_boxes = ["generic/alpine315"]
     vagrant_root = MULTI_BOX
 
     def test_all_boxes_up(self):
