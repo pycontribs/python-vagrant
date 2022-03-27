@@ -50,7 +50,7 @@ SHELL_PROVISION_VAGRANTFILE = os.path.join(
 VM_1 = "web"
 VM_2 = "db"
 # name of the base box used for testing
-TEST_BOX_URL = "generic/alpine310"
+TEST_BOX_URL = "generic/alpine315"
 TEST_BOX_NAME = TEST_BOX_URL
 TEST_PROVIDER = "virtualbox"
 # temp dir for testing.
