@@ -6,6 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   (1..2).each do |i|
     config.vm.define "multialpine0#{i}" do |webserver|
+      webserver.vbguest.auto_update = false
       webserver.vm.box = "generic/alpine315"
       webserver.vm.hostname = "multialpine0#{i}"
     end

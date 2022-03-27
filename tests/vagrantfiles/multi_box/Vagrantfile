@@ -4,6 +4,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vbguest.auto_update = false
   config.vm.box = 'alpine315'
   config.vm.box_url = 'https://app.vagrantup.com/generic/boxes/alpine315/versions/3.6.10/providers/virtualbox.box'
 end

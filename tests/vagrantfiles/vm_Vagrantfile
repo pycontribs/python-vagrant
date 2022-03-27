@@ -1,4 +1,4 @@
-
 Vagrant.configure("2") do |config|
-  config.vm.box = "python-vagrant-base"
+  config.vbguest.auto_update = false
+  config.vm.box = "generic/alpine315"
 end
