@@ -52,6 +52,11 @@ jobs:
       - name: Check vagrant presence
         run: |
           vagrant version
+        if: ${{ ! matrix.skip_vagrant }}
+
+      - name: Install vagrant vbguest
+        run: |
+          vagrant plugin install vagrant-vbguest
           vagrant plugin list
         if: ${{ ! matrix.skip_vagrant }}
 
