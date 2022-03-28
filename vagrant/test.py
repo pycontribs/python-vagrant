@@ -74,10 +74,8 @@ class VagrantTestCase(TestCase):
     def setUpOnce(self):
         """Collect the box states before starting"""
         for box_name in self.vagrant_boxes:
-            box_state = [s.state for s in self.vagrant.status() if s.name == box_name][
-                0
-            ]
-            self.__initial_box_statuses[box_name] = box_state
+            s = self.vagrant.status(vm_name=box_name)[0]
+            self.__initial_box_statuses[box_name] = s.state
 
     def tearDownOnce(self):
         """Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
