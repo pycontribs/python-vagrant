@@ -27,8 +27,6 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from typing import Generator
 
-# from nose.tools import eq_, ok_, assert_raises
-
 import vagrant
 from vagrant import compat
 
@@ -50,9 +48,9 @@ SHELL_PROVISION_VAGRANTFILE = os.path.join(
 VM_1 = "web"
 VM_2 = "db"
 # name of the base box used for testing
-TEST_BOX_NAME = "python-vagrant-base"
-# url of the box file used for testing
-TEST_BOX_URL = "http://files.vagrantup.com/lucid32.box"
+TEST_BOX_URL = "generic/alpine315"
+TEST_BOX_NAME = TEST_BOX_URL
+TEST_PROVIDER = "virtualbox"
 # temp dir for testing.
 TD = None
 
@@ -88,8 +86,7 @@ def setup():
     already set up.
 
     Creates a directory in a temporary location and checks if there is a base
-    box under the `TEST_BOX_NAME`. If not, downloads it from `TEST_BOX_URL` and
-    adds to Vagrant.
+    box under the `TEST_BOX_NAME`. If needed it downloads it.
 
     This is ran once before the first test (global setup).
     """
@@ -99,7 +96,7 @@ def setup():
     sys.stderr.write("test temp dir: {}\n".format(TD))
     boxes = list_box_names()
     if TEST_BOX_NAME not in boxes:
-        cmd = "vagrant box add {} {}".format(TEST_BOX_NAME, TEST_BOX_URL)
+        cmd = f"vagrant box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
         subprocess.check_call(cmd, shell=True)
 
 
@@ -166,17 +163,15 @@ def test_parse_box_list(vm):
     """
     Test the parsing the output of the `vagrant box list` command.
     """
-    listing = """1424141572,,box-name,precise64
-1424141572,,box-provider,virtualbox
+    listing = """ 1424141572,,box-provider,virtualbox
 1424141572,,box-version,0
-1424141572,,box-name,python-vagrant-base
+1424141572,,box-name,generic/alpine315
 1424141572,,box-provider,virtualbox
 1424141572,,box-version,0
 """
     # Can compare tuples to Box class b/c Box is a collections.namedtuple.
     goal = [
-        ("precise64", "virtualbox", "0"),
-        ("python-vagrant-base", "virtualbox", "0"),
+        (TEST_BOX_NAME, "virtualbox", "0"),
     ]
     v = vagrant.Vagrant(TD)
     parsed = v._parse_box_list(listing)
@@ -312,31 +307,30 @@ def test_vm_config(vm):
 
     user = v.user()
     expected_user = parsed_config["User"]
-    eq_(user, expected_user)
+    assert user == expected_user
 
     hostname = v.hostname()
     expected_hostname = parsed_config["HostName"]
-    eq_(hostname, expected_hostname)
+    assert hostname, expected_hostname
 
     port = v.port()
     expected_port = parsed_config["Port"]
-    eq_(port, expected_port)
+    assert port == expected_port
 
     user_hostname = v.user_hostname()
-    eq_(user_hostname, "{}@{}".format(expected_user, expected_hostname))
+    assert user_hostname == "{}@{}".format(expected_user, expected_hostname)
 
     user_hostname_port = v.user_hostname_port()
-    eq_(
-        user_hostname_port,
-        "{}@{}:{}".format(expected_user, expected_hostname, expected_port),
+    assert user_hostname_port == "{}@{}:{}".format(
+        expected_user, expected_hostname, expected_port
     )
 
     keyfile = v.keyfile()
     try:
-        eq_(keyfile, parsed_config["IdentityFile"])
+        assert keyfile == parsed_config["IdentityFile"]
     except AssertionError:
         # Vagrant 1.8 adds quotes around the filepath for the private key.
-        eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
+        assert keyfile == parsed_config["IdentityFile"].lstrip('"').rstrip('"')
 
 
 def test_vm_sandbox_mode(vm):
@@ -401,44 +395,42 @@ def test_vm_sandbox_mode(vm):
 
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, None, "There should be no test file")
+    assert test_file_contents == None, "There should be no test file"
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, "foo", "The test file should read 'foo'")
+    assert test_file_contents == "foo", "The test file should read 'foo'"
 
     v.sandbox_rollback()
     time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
 
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, None, "There should be no test file")
+    assert test_file_contents == None, "There should be no test file"
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, "foo", "The test file should read 'foo'")
+    assert test_file_contents == "foo", "The test file should read 'foo'"
     v.sandbox_commit()
     _write_test_file(v, "bar")
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, "bar", "The test file should read 'bar'")
+    assert test_file_contents == "bar", "The test file should read 'bar'"
 
     v.sandbox_rollback()
     time.sleep(10)  # https://github.com/jedi4ever/sahara/issues/16
 
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    eq_(test_file_contents, "foo", "The test file should read 'foo'")
+    assert test_file_contents == "foo", "The test file should read 'foo'"
 
     sandbox_status = v._parse_vagrant_sandbox_status("Usage: ...")
-    eq_(
-        sandbox_status,
-        "not installed",
+    assert sandbox_status == "not installed", (
         "When 'vagrant sandbox status'"
         + " outputs vagrant help status should be 'not installed', "
-        + "got:'{}'".format(sandbox_status),
+        + "got:'{}'".format(sandbox_status)
     )
 
     v.destroy()
@@ -463,31 +455,27 @@ def test_boxesvm():
         subprocess.check_call(["vagrant", "box", "remove", box_name])
 
     # Test that there is no dummy box listed
-    ok_(
-        box_name not in [b.name for b in v.box_list()],
-        "There should be no dummy box before it's added.",
-    )
-
+    assert box_name not in [
+        b.name for b in v.box_list()
+    ], "There should be no dummy box before it's added."
     # Add a box
     v.box_add(box_name, TEST_BOX_URL)
 
     # Test that there is a dummy box listed
     box_listing = v.box_list()
-    ok_(
-        (box_name, provider) in [(b.name, b.provider) for b in box_listing],
-        "The box {box} for provider {provider} should be in the list returned by box_list(). box_list()={box_listing}".format(
-            box=box_name, provider=provider, box_listing=box_listing
-        ),
+    assert (box_name, provider) in [
+        (b.name, b.provider) for b in box_listing
+    ], "The box {box} for provider {provider} should be in the list returned by box_list(). box_list()={box_listing}".format(
+        box=box_name, provider=provider, box_listing=box_listing
     )
 
     # Remove dummy box using a box name and provider
     v.box_remove(box_name, provider)
 
     # Test that there is no dummy box listed
-    ok_(
-        box_name not in [b.name for b in v.box_list()],
-        "There should be no dummy box after it has been removed.",
-    )
+    assert box_name not in [
+        b.name for b in v.box_list()
+    ], "There should be no dummy box after it has been removed."
 
 
 def test_provisioning(vm, vagrantfile=SHELL_PROVISION_VAGRANTFILE):
@@ -499,45 +487,45 @@ def test_provisioning(vm, vagrantfile=SHELL_PROVISION_VAGRANTFILE):
 
     v.up(no_provision=True)
     test_file_contents = _read_test_file(v)
-    eq_(test_file_contents, None, "There should be no test file after up()")
+    assert test_file_contents == None, "There should be no test file after up()"
 
     v.provision()
     test_file_contents = _read_test_file(v)
     print("Contents: {}".format(test_file_contents))
-    eq_(test_file_contents, "foo", "The test file should contain 'foo'")
+    assert test_file_contents == "foo", "The test file should contain 'foo'"
 
 
 def test_multivm_lifecycle(vm, vagrant_file=MULTIVM_VAGRANTFILE):
     v = vagrant.Vagrant(TD)
 
     # test getting multiple statuses at once
-    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
-    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
+    assert v.status(VM_1)[0].state == v.NOT_CREATED
+    assert v.status(VM_2)[0].state == v.NOT_CREATED
 
     v.up(vm_name=VM_1)
-    eq_(v.status(VM_1)[0].state, v.RUNNING)
-    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
+    assert v.status(VM_1)[0].state == v.RUNNING
+    assert v.status(VM_2)[0].state == v.NOT_CREATED
 
     # start both vms
     v.up()
-    eq_(v.status(VM_1)[0].state, v.RUNNING)
-    eq_(v.status(VM_2)[0].state, v.RUNNING)
+    assert v.status(VM_1)[0].state == v.RUNNING
+    assert v.status(VM_2)[0].state == v.RUNNING
 
     v.halt(vm_name=VM_1)
-    eq_(v.status(VM_1)[0].state, v.POWEROFF)
-    eq_(v.status(VM_2)[0].state, v.RUNNING)
+    assert v.status(VM_1)[0].state == v.POWEROFF
+    assert v.status(VM_2)[0].state == v.RUNNING
 
     v.destroy(vm_name=VM_1)
-    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
-    eq_(v.status(VM_2)[0].state, v.RUNNING)
+    assert v.status(VM_1)[0].state == v.NOT_CREATED
+    assert v.status(VM_2)[0].state == v.RUNNING
 
     v.suspend(vm_name=VM_2)
-    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
-    eq_(v.status(VM_2)[0].state, v.SAVED)
+    assert v.status(VM_1)[0].state == v.NOT_CREATED
+    assert v.status(VM_2)[0].state == v.SAVED
 
     v.destroy(vm_name=VM_2)
-    eq_(v.status(VM_1)[0].state, v.NOT_CREATED)
-    eq_(v.status(VM_2)[0].state, v.NOT_CREATED)
+    assert v.status(VM_1)[0].state == v.NOT_CREATED
+    assert v.status(VM_2)[0].state == v.NOT_CREATED
 
 
 def test_multivm_config(vm, vagrantfile=MULTIVM_VAGRANTFILE):
@@ -556,31 +544,30 @@ def test_multivm_config(vm, vagrantfile=MULTIVM_VAGRANTFILE):
 
     user = v.user(vm_name=VM_1)
     expected_user = parsed_config["User"]
-    eq_(user, expected_user)
+    assert user == expected_user
 
     hostname = v.hostname(vm_name=VM_1)
     expected_hostname = parsed_config["HostName"]
-    eq_(hostname, expected_hostname)
+    assert hostname == expected_hostname
 
     port = v.port(vm_name=VM_1)
     expected_port = parsed_config["Port"]
-    eq_(port, expected_port)
+    assert port == expected_port
 
     user_hostname = v.user_hostname(vm_name=VM_1)
-    eq_(user_hostname, "{}@{}".format(expected_user, expected_hostname))
+    assert user_hostname == "{}@{}".format(expected_user, expected_hostname)
 
     user_hostname_port = v.user_hostname_port(vm_name=VM_1)
-    eq_(
-        user_hostname_port,
-        "{}@{}:{}".format(expected_user, expected_hostname, expected_port),
+    assert user_hostname_port == "{}@{}:{}".format(
+        expected_user, expected_hostname, expected_port
     )
 
     keyfile = v.keyfile(vm_name=VM_1)
     try:
-        eq_(keyfile, parsed_config["IdentityFile"])
+        assert keyfile == parsed_config["IdentityFile"]
     except AssertionError:
         # Vagrant 1.8 adds quotes around the filepath for the private key.
-        eq_(keyfile, parsed_config["IdentityFile"].lstrip('"').rstrip('"'))
+        assert keyfile == parsed_config["IdentityFile"].lstrip('"').rstrip('"')
 
 
 def test_ssh_command(vm):

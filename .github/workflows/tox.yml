@@ -52,6 +52,12 @@ jobs:
       - name: Check vagrant presence
         run: |
           vagrant version
+        if: ${{ ! matrix.skip_vagrant }}
+
+      - name: Install vagrant plugins
+        run: |
+          # not installing due to https://github.com/dotless-de/vagrant-vbguest/issues/422:
+          # vagrant plugin install vagrant-vbguest
           vagrant plugin list
         if: ${{ ! matrix.skip_vagrant }}
 

@@ -1,15 +1,16 @@
-
 # http://docs.vagrantup.com/v2/multi-machine/index.html
 # http://docs.vagrantup.com/v2/networking/
 
 Vagrant.configure("2") do |config|
   config.vm.define :web do |web|
-    web.vm.box = "python-vagrant-base"
+    web.vbguest.auto_update = false if Vagrant.has_plugin?("vagrant-vbguest")
+    web.vm.box = "generic/alpine315"
     web.vm.network :forwarded_port, guest: 80, host: 8080
   end
 
   config.vm.define :db do |db|
-    db.vm.box = "python-vagrant-base"
+    db.vbguest.auto_update = false if Vagrant.has_plugin?("vagrant-vbguest")
+    db.vm.box = "generic/alpine315"
     db.vm.network :forwarded_port, guest: 3306, host: 3306
   end
 end

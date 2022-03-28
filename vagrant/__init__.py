@@ -218,14 +218,6 @@ class Vagrant(object):
     # libvirt
     SHUTOFF = "shutoff"
 
-    BASE_BOXES = {
-        "ubuntu-Lucid32": "http://files.vagrantup.com/lucid32.box",
-        "ubuntu-lucid32": "http://files.vagrantup.com/lucid32.box",
-        "ubuntu-lucid64": "http://files.vagrantup.com/lucid64.box",
-        "ubuntu-precise32": "http://files.vagrantup.com/precise32.box",
-        "ubuntu-precise64": "http://files.vagrantup.com/precise64.box",
-    }
-
     def __init__(
         self,
         root=None,
@@ -705,9 +697,8 @@ class Vagrant(object):
 
         Example output:
 
-            [Box(name='precise32', provider='virtualbox', version='0'),
-             Box(name='precise64', provider='virtualbox', version=None),
-             Box(name='trusty64', provider='virtualbox', version=None)]
+            [Box(name='generic/alpine315', provider='virtualbox', version='0'),
+             Box(name='generic/alpine37', provider='virtualbox', version=None)]
 
         Implementation Details:
 
