@@ -6,6 +6,7 @@ There are a handful of classes to try to provide multiple different varying samp
 import os
 from vagrant import Vagrant
 from vagrant.test import VagrantTestCase
+from .test_vagrant import TEST_BOX_NAME
 
 
 def get_vagrant_root(test_vagrant_root_path):
@@ -44,7 +45,7 @@ class SingleBoxTests(VagrantTestCase):
 class SpecificMultiBoxTests(VagrantTestCase):
     """Tests for a multiple box setup where only some of the boxes are to be on"""
 
-    vagrant_boxes = ["precise32"]
+    vagrant_boxes = [TEST_BOX_NAME]
     vagrant_root = MULTI_BOX
 
     def test_all_boxes_up(self):
