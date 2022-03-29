@@ -52,7 +52,33 @@ TEST_BOX_URL = "generic/alpine315"
 TEST_BOX_NAME = TEST_BOX_URL
 TEST_PROVIDER = "virtualbox"
 # temp dir for testing.
-TD = None
+
+
+@pytest.fixture(name="test_dir", scope="session")
+def fixture_test_dir() -> Generator[str, None, None]:
+    """
+    Creates the directory used for testing and sets up the base box if not
+    already set up.
+
+    Creates a directory in a temporary location and checks if there is a base
+    box under the `TEST_BOX_NAME`. If needed it downloads it.
+
+    This is ran once before the first test (global setup).
+    """
+    sys.stderr.write("module setup()\n")
+    my_dir = tempfile.mkdtemp()
+    sys.stderr.write("test temp dir: {}\n".format(my_dir))
+    boxes = list_box_names()
+    if TEST_BOX_NAME not in boxes:
+        cmd = f"vagrant box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
+        subprocess.check_call(cmd, shell=True)
+
+    yield my_dir
+    # Removes the directory created initially, runs once after the last test
+    sys.stderr.write("module teardown()\n")
+    if my_dir is not None:
+        subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
+        shutil.rmtree(my_dir)
 
 
 def list_box_names():
@@ -77,69 +103,34 @@ def list_box_names():
     return box_names
 
 
-# MODULE-LEVEL SETUP AND TEARDOWN
-
-
-def setup():
-    """
-    Creates the directory used for testing and sets up the base box if not
-    already set up.
-
-    Creates a directory in a temporary location and checks if there is a base
-    box under the `TEST_BOX_NAME`. If needed it downloads it.
-
-    This is ran once before the first test (global setup).
-    """
-    sys.stderr.write("module setup()\n")
-    global TD
-    TD = tempfile.mkdtemp()
-    sys.stderr.write("test temp dir: {}\n".format(TD))
-    boxes = list_box_names()
-    if TEST_BOX_NAME not in boxes:
-        cmd = f"vagrant box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
-        subprocess.check_call(cmd, shell=True)
-
-
-def teardown():
-    """
-    Removes the directory created in setup.
-
-    This is run once after the last test.
-    """
-    sys.stderr.write("module teardown()\n")
-    if TD is not None:
-        subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
-        shutil.rmtree(TD)
-
 
 # TEST-LEVEL SETUP AND TEARDOWN
 
 
-@pytest.fixture(scope="module")
-def vm(request: FixtureRequest, vagrantfile=None) -> Generator[None, None, None]:
+@pytest.fixture(name="vm_dir", scope="module")
+def fixture_vm_dir(request: FixtureRequest, test_dir) -> Generator[str, None, None]:
     """
     Make and return a function that sets up the temporary directory with a
     Vagrantfile.  By default, use VM_VAGRANTFILE.
     vagrantfile: path to a vagrantfile to use as Vagrantfile in the testing temporary directory.
     """
-    if vagrantfile is None:
-        vagrantfile = VM_VAGRANTFILE
+    vagrantfile = getattr(request, "param", VM_VAGRANTFILE)
 
-    shutil.copy(vagrantfile, os.path.join(TD, "Vagrantfile"))
-    yield
-    # teardown: Attempts to destroy every VM in the Vagrantfile in the temporary directory, TD.
+    shutil.copy(vagrantfile, os.path.join(test_dir, "Vagrantfile"))
+    yield test_dir
+    # teardown: Attempts to destroy every VM in the Vagrantfile in the temporary directory.
     # It is not an error if a VM has already been destroyed.
     try:
         # Try to destroy any vagrant box that might be running.
-        subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
+        subprocess.check_call("vagrant destroy -f", cwd=test_dir, shell=True)
     except subprocess.CalledProcessError:
         pass
     finally:
         # remove Vagrantfile created by setup.
-        os.unlink(os.path.join(TD, "Vagrantfile"))
+        os.unlink(os.path.join(test_dir, "Vagrantfile"))
 
 
-def test_parse_plugin_list(vm):
+def test_parse_plugin_list(vm_dir):
     """
     Test the parsing the output of the `vagrant plugin list` command.
     """
@@ -151,7 +142,7 @@ def test_parse_plugin_list(vm):
 """
     # Can compare tuples to Plugin class b/c Plugin is a collections.namedtuple.
     goal = [("sahara", "0.0.16", False), ("vagrant-share", "1.1.3", True)]
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     parsed = v._parse_plugin_list(listing)
     assert (
         goal == parsed
@@ -160,7 +151,7 @@ def test_parse_plugin_list(vm):
     )
 
 
-def test_parse_box_list(vm):
+def test_parse_box_list(vm_dir):
     """
     Test the parsing the output of the `vagrant box list` command.
     """
@@ -174,7 +165,7 @@ def test_parse_box_list(vm):
     goal = [
         (TEST_BOX_NAME, "virtualbox", "0"),
     ]
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     parsed = v._parse_box_list(listing)
     assert (
         goal == parsed
@@ -183,7 +174,7 @@ def test_parse_box_list(vm):
     )
 
 
-def test_parse_status(vm):
+def test_parse_status(vm_dir):
     """
     Test the parsing the output of the `vagrant status` command.
     """
@@ -198,7 +189,7 @@ def test_parse_status(vm):
 """
     # Can compare tuples to Status class b/c Status is a collections.namedtuple.
     goal = [("web", "running", "virtualbox"), ("db", "not_created", "virtualbox")]
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     parsed = v._parse_status(listing)
     assert (
         goal == parsed
@@ -207,7 +198,7 @@ def test_parse_status(vm):
     )
 
 
-def test_parse_aws_status(vm):
+def test_parse_aws_status(vm_dir):
     """
     Test the parsing the output of the `vagrant status` command for an aws instance.
     """
@@ -230,7 +221,7 @@ def test_parse_aws_status(vm):
 """
     # Can compare tuples to Status class b/c Status is a collections.namedtuple.
     goal = [("default", "running", "aws")]
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     parsed = v._parse_status(listing)
     assert (
         goal == parsed
@@ -239,44 +230,44 @@ def test_parse_aws_status(vm):
     )
 
 
-def test_vm_status(vm):
+def test_vm_status(vm_dir):
     """
     Test whether vagrant.status() correctly reports state of the VM, in a
     single-VM environment.
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     assert (
         v.NOT_CREATED == v.status()[0].state
     ), "Before going up status should be vagrant.NOT_CREATED"
     command = "vagrant up"
-    subprocess.check_call(command, cwd=TD, shell=True)
+    subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.RUNNING in v.status()[0].state
     ), "After going up status should be vagrant.RUNNING"
 
     command = "vagrant halt"
-    subprocess.check_call(command, cwd=TD, shell=True)
+    subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.POWEROFF in v.status()[0].state
     ), "After halting status should be vagrant.POWEROFF"
 
     command = "vagrant destroy -f"
-    subprocess.check_call(command, cwd=TD, shell=True)
+    subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.NOT_CREATED in v.status()[0].state
     ), "After destroying status should be vagrant.NOT_CREATED"
 
 
-def test_vm_lifecycle(vm):
+def test_vm_lifecycle(vm_dir):
     """
     Test methods controlling the VM - init(), up(), halt(), destroy().
     """
 
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
 
     # Test init by removing Vagrantfile, since v.init() will create one.
     try:
-        os.unlink(os.path.join(TD, "Vagrantfile"))
+        os.unlink(os.path.join(vm_dir, "Vagrantfile"))
     except FileNotFoundError:
         pass
 
@@ -296,14 +287,14 @@ def test_vm_lifecycle(vm):
     assert v.NOT_CREATED == v.status()[0].state
 
 
-def test_vm_config(vm):
+def test_vm_config(vm_dir):
     """
     Test methods retrieving ssh config settings, like user, hostname, and port.
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     v.up()
     command = "vagrant ssh-config"
-    ssh_config = compat.decode(subprocess.check_output(command, cwd=TD, shell=True))
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
     parsed_config = dict(
         line.strip().split(None, 1)
         for line in ssh_config.splitlines()
@@ -338,7 +329,7 @@ def test_vm_config(vm):
         assert keyfile == parsed_config["IdentityFile"].lstrip('"').rstrip('"')
 
 
-def test_vm_sandbox_mode(vm):
+def test_vm_sandbox_mode(vm_dir):
     """
     Test methods for enabling/disabling the sandbox mode
     and committing/rolling back changes.
@@ -347,11 +338,11 @@ def test_vm_sandbox_mode(vm):
     """
     # Only test Sahara if it is installed.
     # This leaves the testing of Sahara to people who care.
-    sahara_installed = _plugin_installed(vagrant.Vagrant(TD), "sahara")
+    sahara_installed = _plugin_installed(vagrant.Vagrant(vm_dir), "sahara")
     if not sahara_installed:
         return
 
-    v = vagrant.SandboxVagrant(TD)
+    v = vagrant.SandboxVagrant(vm_dir)
 
     sandbox_status = v.sandbox_status()
     assert (
@@ -447,11 +438,11 @@ def test_vm_sandbox_mode(vm):
     )
 
 
-def test_boxesvm():
+def test_boxesvm(test_dir):
     """
     Test methods for manipulating boxes - adding, listing, removing.
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(test_dir)
     box_name = "python-vagrant-dummy-box"
     provider = "virtualbox"
 
@@ -483,12 +474,13 @@ def test_boxesvm():
     ], "There should be no dummy box after it has been removed."
 
 
-def test_provisioning(vm, vagrantfile=SHELL_PROVISION_VAGRANTFILE):
+@pytest.mark.parametrize("vm_dir", [SHELL_PROVISION_VAGRANTFILE], indirect=True)
+def test_provisioning(vm_dir):
     """
     Test provisioning support.  The tested provision config creates a file on
     the vm with the contents 'foo'.
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
 
     v.up(no_provision=True)
     test_file_contents = _read_test_file(v)
@@ -500,8 +492,9 @@ def test_provisioning(vm, vagrantfile=SHELL_PROVISION_VAGRANTFILE):
     assert test_file_contents == "foo", "The test file should contain 'foo'"
 
 
-def test_multivm_lifecycle(vm, vagrant_file=MULTIVM_VAGRANTFILE):
-    v = vagrant.Vagrant(TD)
+@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+def test_multivm_lifecycle(vm_dir):
+    v = vagrant.Vagrant(vm_dir)
 
     # test getting multiple statuses at once
     assert v.status(VM_1)[0].state == v.NOT_CREATED
@@ -533,14 +526,15 @@ def test_multivm_lifecycle(vm, vagrant_file=MULTIVM_VAGRANTFILE):
     assert v.status(VM_2)[0].state == v.NOT_CREATED
 
 
-def test_multivm_config(vm, vagrantfile=MULTIVM_VAGRANTFILE):
+@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+def test_multivm_config(vm_dir):
     """
     Test methods retrieving configuration settings.
     """
-    v = vagrant.Vagrant(TD, quiet_stdout=False, quiet_stderr=False)
+    v = vagrant.Vagrant(vm_dir, quiet_stdout=False, quiet_stderr=False)
     v.up(vm_name=VM_1)
     command = "vagrant ssh-config " + VM_1
-    ssh_config = compat.decode(subprocess.check_output(command, cwd=TD, shell=True))
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
     parsed_config = dict(
         line.strip().split(None, 1)
         for line in ssh_config.splitlines()
@@ -575,21 +569,22 @@ def test_multivm_config(vm, vagrantfile=MULTIVM_VAGRANTFILE):
         assert keyfile == parsed_config["IdentityFile"].lstrip('"').rstrip('"')
 
 
-def test_ssh_command(vm):
+def test_ssh_command(vm_dir):
     """
     Test executing a command via ssh on a vm.
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     v.up()
     output = v.ssh(command="echo hello")
     assert output.strip() == "hello"
 
 
-def test_ssh_command_multivm(vm, vagrantfile=MULTIVM_VAGRANTFILE):
+@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+def test_ssh_command_multivm(vm_dir):
     """
     Test executing a command via ssh on a specific vm
     """
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
     v.up()
     output = v.ssh(vm_name=VM_1, command="echo hello")
     assert output.strip() == "hello"
@@ -597,12 +592,12 @@ def test_ssh_command_multivm(vm, vagrantfile=MULTIVM_VAGRANTFILE):
     assert output.strip() == "I like your hat"
 
 
-def test_streaming_output(vm):
+def test_streaming_output(vm_dir):
     """
     Test streaming output of up or reload.
     """
     test_string = "Waiting for machine to boot."
-    v = vagrant.Vagrant(TD)
+    v = vagrant.Vagrant(vm_dir)
 
     with pytest.raises(subprocess.CalledProcessError):
         v.up(vm_name="incorrect-name")
@@ -624,8 +619,8 @@ def test_streaming_output(vm):
     assert streaming_reload
 
 
-def test_make_file_cm():
-    filename = os.path.join(TD, "test.log")
+def test_make_file_cm(test_dir):
+    filename = os.path.join(test_dir, "test.log")
     if os.path.exists(filename):
         os.remove(filename)
 
