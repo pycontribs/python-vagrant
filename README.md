@@ -35,11 +35,10 @@ backwards-compatible features or bug fixes are added.
 
 ## Requirements
 
-- Vagrant 1.4 or greater (currently tested with 1.7.2). Using the latest
-  version of Vagrant is strongly recommended.
+- Vagrant 2.2 or greater. Using the latest version of Vagrant is strongly
+  recommended.
 - Vagrant requires VirtualBox, VMWare, or another supported provider.
-- Python 2.7 (the only version this package has been tested with.) or Python
-  3.3 or higher.
+- Python 3.8 or newer.
 - The Sahara gem for Vagrant is optional. It will allow you to use
   `SandboxVagrant`.
 
@@ -56,7 +55,7 @@ Download and install python-vagrant:
 Clone and install python-vagrant
 
     cd ~
-    git clone git@github.com:todddeluca/python-vagrant.git
+    git clone git@github.com:pycontribs/python-vagrant.git
     cd python-vagrant
     python setup.py install
 
