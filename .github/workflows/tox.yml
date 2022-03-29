@@ -27,12 +27,9 @@ jobs:
         include:
           - tox_env: packaging
             os: ubuntu-20.04
-            python-version: 3.7
+            python-version: 3.8
             unit: false
             skip_vagrant: true
-          - tox_env: py37
-            os: macos-10.15
-            python-version: 3.7
           - tox_env: py38
             os: macos-10.15
             python-version: 3.8
