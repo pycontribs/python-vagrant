@@ -108,6 +108,7 @@ def teardown():
     """
     sys.stderr.write("module teardown()\n")
     if TD is not None:
+        subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
         shutil.rmtree(TD)
 
 
@@ -274,7 +275,11 @@ def test_vm_lifecycle(vm):
     v = vagrant.Vagrant(TD)
 
     # Test init by removing Vagrantfile, since v.init() will create one.
-    os.unlink(os.path.join(TD, "Vagrantfile"))
+    try:
+        os.unlink(os.path.join(TD, "Vagrantfile"))
+    except FileNotFoundError:
+        pass
+
     v.init(TEST_BOX_NAME)
     assert v.NOT_CREATED == v.status()[0].state
 
