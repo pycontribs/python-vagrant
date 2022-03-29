@@ -4,6 +4,7 @@ A TestCase class, tying together the Vagrant class.
 It also removes some of the boilerplate involved in writing tests that leverage
 vagrant boxes.
 """
+from typing import Dict, List
 from unittest import TestCase
 from vagrant import Vagrant, stderr_cm
 
@@ -20,11 +21,11 @@ class VagrantTestCase(TestCase):
             will remain up. Defaults to False
     """
 
-    vagrant_boxes = []
+    vagrant_boxes: List[str] = []
     vagrant_root = None
     restart_boxes = False
 
-    __initial_box_statuses = {}
+    __initial_box_statuses: Dict[str, str] = {}
     __cleanup_actions = {
         Vagrant.NOT_CREATED: "destroy",
         Vagrant.POWEROFF: "halt",
