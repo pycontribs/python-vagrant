@@ -28,7 +28,7 @@ class AllMultiBoxesTests(VagrantTestCase):
 
     def test_default_boxes_list(self):
         """Tests that all boxes in a Vagrantfile if vagrant_boxes is not defined"""
-        self.assertGreater(len(self.vagrant_boxes), 0)
+        assert len(self.vagrant_boxes) > 0
 
 
 class SingleBoxTests(VagrantTestCase):
@@ -39,7 +39,7 @@ class SingleBoxTests(VagrantTestCase):
     def test_box_up(self):
         """Tests that the box starts as expected"""
         state = self.vagrant.status(vm_name=self.vagrant_boxes[0])[0].state
-        self.assertEqual(state, Vagrant.RUNNING)
+        assert state == Vagrant.RUNNING
 
 
 class SpecificMultiBoxTests(VagrantTestCase):
@@ -52,7 +52,7 @@ class SpecificMultiBoxTests(VagrantTestCase):
         """Tests that all boxes listed are up after starting"""
         for box_name in self.vagrant_boxes:
             state = self.vagrant.status(vm_name=box_name)[0].state
-            self.assertEqual(state, Vagrant.RUNNING)
+            assert state == Vagrant.RUNNING
 
     def test_unlisted_boxes_ignored(self):
         """Tests that the boxes not listed are not brought up"""

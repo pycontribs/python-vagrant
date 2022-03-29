@@ -41,7 +41,7 @@ VAGRANT_NOT_FOUND_WARNING = (
 )
 
 
-def which(program):
+def which(program):  # noqa C901
     """
     Emulate unix 'which' command.  If program is a path to an executable file
     (i.e. it contains any directory components, like './myscript'), return
@@ -449,7 +449,7 @@ class Vagrant(object):
         self._cached_conf[vm_name] = None  # remove cached configuration
 
     def status(self, vm_name=None):
-        """
+        r"""
         Return the results of a `vagrant status` call as a list of one or more
         Status objects.  A Status contains the following attributes:
 
@@ -912,7 +912,8 @@ class Vagrant(object):
         return plugins
 
     def _parse_machine_readable_output(self, output):
-        """
+        """Parse machine readable output from vagrant commands.
+
         param output: a string containing the output of a vagrant command with the `--machine-readable` option.
 
         returns: a dict mapping each 'target' in the machine readable output to
@@ -943,7 +944,7 @@ class Vagrant(object):
         return parsed_lines
 
     def _parse_config(self, ssh_config):
-        """
+        r"""
         This lame parser does not parse the full grammar of an ssh config
         file.  It makes assumptions that are (hopefully) correct for the output
         of `vagrant ssh-config [vm-name]`.  Specifically it assumes that there
