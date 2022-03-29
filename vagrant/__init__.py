@@ -1038,8 +1038,7 @@ class Vagrant:
                 cwd=self.root,
                 env=self.env,
                 stdout=subprocess.PIPE,
-                stderr=err_fh,
-                bufsize=1,
+                stderr=err_fh
             )
 
             # Iterate over output lines.
