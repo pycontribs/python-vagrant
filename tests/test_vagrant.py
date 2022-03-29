@@ -596,7 +596,7 @@ def test_streaming_output(vm_dir):
     """
     Test streaming output of up or reload.
     """
-    test_string = "Waiting for machine to boot."
+    test_string = "Machine already provisioned"
     v = vagrant.Vagrant(vm_dir)
 
     with pytest.raises(subprocess.CalledProcessError):
