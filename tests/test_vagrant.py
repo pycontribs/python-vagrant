@@ -51,6 +51,9 @@ VM_2 = "db"
 TEST_BOX_URL = "generic/alpine315"
 TEST_BOX_NAME = TEST_BOX_URL
 TEST_PROVIDER = "virtualbox"
+TEST_DUMMY_BOX_URL = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "tools", f"dummy-{TEST_PROVIDER}.box"
+)
 # temp dir for testing.
 
 
@@ -455,7 +458,7 @@ def test_boxesvm(test_dir):
         b.name for b in v.box_list()
     ], "There should be no dummy box before it's added."
     # Add a box
-    v.box_add(box_name, TEST_BOX_URL)
+    v.box_add(box_name, TEST_DUMMY_BOX_URL)
 
     # Test that there is a dummy box listed
     box_listing = v.box_list()
