@@ -77,6 +77,7 @@ def fixture_test_dir() -> Generator[str, None, None]:
     # Removes the directory created initially, runs once after the last test
     sys.stderr.write("module teardown()\n")
     if my_dir is not None:
+        subprocess.check_call("vagrant destroy -f", cwd=TD, shell=True)
         shutil.rmtree(my_dir)
 
 
@@ -264,7 +265,11 @@ def test_vm_lifecycle(vm_dir):
     v = vagrant.Vagrant(vm_dir)
 
     # Test init by removing Vagrantfile, since v.init() will create one.
-    os.unlink(os.path.join(vm_dir, "Vagrantfile"))
+    try:
+        os.unlink(os.path.join(vm_dir, "Vagrantfile"))
+    except FileNotFoundError:
+        pass
+
     v.init(TEST_BOX_NAME)
     assert v.NOT_CREATED == v.status()[0].state
 
