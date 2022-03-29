@@ -257,10 +257,7 @@ def test_vm_status(vm_dir):
 
 
 def test_vm_lifecycle(vm_dir):
-    """
-    Test methods controlling the VM - init(), up(), halt(), destroy().
-    """
-
+    """Test methods controlling the VM - init(), up(), halt(), destroy()."""
     v = vagrant.Vagrant(vm_dir)
 
     # Test init by removing Vagrantfile, since v.init() will create one.
@@ -385,7 +382,7 @@ def test_vm_sandbox_mode(vm_dir):
 
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    assert test_file_contents == None, "There should be no test file"
+    assert test_file_contents is None, "There should be no test file"
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
@@ -397,7 +394,7 @@ def test_vm_sandbox_mode(vm_dir):
 
     test_file_contents = _read_test_file(v)
     print(test_file_contents)
-    assert test_file_contents == None, "There should be no test file"
+    assert test_file_contents is None, "There should be no test file"
 
     _write_test_file(v, "foo")
     test_file_contents = _read_test_file(v)
@@ -468,7 +465,7 @@ def test_boxesvm(test_dir):
     ], "There should be no dummy box after it has been removed."
 
 
-@pytest.mark.parametrize("vm_dir", [SHELL_PROVISION_VAGRANTFILE], indirect=True)
+@pytest.mark.parametrize("vm_dir", (SHELL_PROVISION_VAGRANTFILE,), indirect=True)
 def test_provisioning(vm_dir):
     """
     Test provisioning support.  The tested provision config creates a file on
@@ -478,7 +475,7 @@ def test_provisioning(vm_dir):
 
     v.up(no_provision=True)
     test_file_contents = _read_test_file(v)
-    assert test_file_contents == None, "There should be no test file after up()"
+    assert test_file_contents is None, "There should be no test file after up()"
 
     v.provision()
     test_file_contents = _read_test_file(v)
@@ -486,7 +483,7 @@ def test_provisioning(vm_dir):
     assert test_file_contents == "foo", "The test file should contain 'foo'"
 
 
-@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+@pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
 def test_multivm_lifecycle(vm_dir):
     v = vagrant.Vagrant(vm_dir)
 
@@ -520,7 +517,7 @@ def test_multivm_lifecycle(vm_dir):
     assert v.status(VM_2)[0].state == v.NOT_CREATED
 
 
-@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+@pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
 def test_multivm_config(vm_dir):
     """
     Test methods retrieving configuration settings.
@@ -573,7 +570,7 @@ def test_ssh_command(vm_dir):
     assert output.strip() == "hello"
 
 
-@pytest.mark.parametrize("vm_dir", [MULTIVM_VAGRANTFILE], indirect=True)
+@pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
 def test_ssh_command_multivm(vm_dir):
     """
     Test executing a command via ssh on a specific vm
