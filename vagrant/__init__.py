@@ -160,7 +160,7 @@ def stderr_cm():
 @contextlib.contextmanager
 def devnull_cm():
     """Redirect the stdout or stderr of the child process to /dev/null."""
-    with open(os.devnull, "w") as fh:
+    with open(os.devnull, "w", encoding="utf-8") as fh:
         yield fh
 
 
@@ -187,13 +187,13 @@ def make_file_cm(filename, mode="a"):
 
     @contextlib.contextmanager
     def cm():
-        with open(filename, mode=mode) as fh:
+        with open(filename, mode=mode, encoding="utf-8") as fh:
             yield fh
 
     return cm
 
 
-class Vagrant(object):
+class Vagrant:
     """
     Object to up (launch) and destroy (terminate) vagrant virtual machines,
     to check the status of the machine and to report on the configuration
@@ -718,7 +718,9 @@ class Vagrant(object):
         output = self._run_vagrant_command(["box", "list", "--machine-readable"])
         return self._parse_box_list(output)
 
-    def package(self, vm_name=None, base=None, output=None, vagrantfile=None):
+    def package(
+        self, vm_name=None, base=None, output=None, vagrantfile=None
+    ):  # pylint: disable=unused-argument
         """
         Packages a running vagrant environment into a box.
 
@@ -938,9 +940,8 @@ class Vagrant(object):
         # vagrant 1.8 adds additional fields that aren't required,
         # and will break parsing if included in the status lines.
         # filter them out pending future implementation.
-        parsed_lines = list(
-            filter(lambda x: x[2] not in ["metadata", "ui", "action"], parsed_lines)
-        )
+        unneeded_kind = ["metadata", "ui", "action", "Description", "box-info"]
+        parsed_lines = list(filter(lambda x: x[2] not in unneeded_kind, parsed_lines))
         return parsed_lines
 
     def _parse_config(self, ssh_config):
@@ -966,7 +967,7 @@ class Vagrant(object):
         See https://github.com/bitprophet/ssh/blob/master/ssh/config.py for a
         more compliant ssh config file parser.
         """
-        conf = dict()
+        conf = {}
         started_parsing = False
         for line in ssh_config.splitlines():
             if line.strip().startswith("Host ") and not started_parsing:
@@ -1029,8 +1030,6 @@ class Vagrant(object):
         :return: generator that yields each line of the command stdout.
         :rtype: generator iterator
         """
-        py3 = sys.version_info > (3, 0)
-
         # Make subprocess command
         command = self._make_vagrant_command(args)
         with self.err_cm() as err_fh:
@@ -1045,14 +1044,14 @@ class Vagrant(object):
 
             # Iterate over output lines.
             # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
-            p = subprocess.Popen(**sp_args)
-            with p.stdout:
-                for line in iter(p.stdout.readline, b""):
-                    yield compat.decode(line)  # if PY3 decode bytestrings
-            p.wait()
-            # Raise CalledProcessError for consistency with _call_vagrant_command
-            if p.returncode != 0:
-                raise subprocess.CalledProcessError(p.returncode, command)
+            with subprocess.Popen(**sp_args) as p:
+                with p.stdout:
+                    for line in iter(p.stdout.readline, b""):
+                        yield compat.decode(line)  # if PY3 decode bytestrings
+                p.wait()
+                # Raise CalledProcessError for consistency with _call_vagrant_command
+                if p.returncode != 0:
+                    raise subprocess.CalledProcessError(p.returncode, command)
 
 
 class SandboxVagrant(Vagrant):

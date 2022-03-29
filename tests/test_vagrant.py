@@ -16,16 +16,16 @@ to avoid downloading of the box file on every run.
 
 from __future__ import print_function
 import os
-import re
-import unittest
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+from typing import Generator
+
+
 import pytest
 from _pytest.fixtures import FixtureRequest
-from typing import Generator
 
 import vagrant
 from vagrant import compat
@@ -79,7 +79,11 @@ def fixture_test_dir() -> Generator[str, None, None]:
     # Removes the directory created initially, runs once after the last test
     sys.stderr.write("module teardown()\n")
     if my_dir is not None:
-        subprocess.check_call(f"{VAGRANT_EXE} destroy -f", cwd=my_dir, shell=True)
+        try:
+            subprocess.check_call("vagrant destroy -f", cwd=my_dir, shell=True)
+        except subprocess.CalledProcessError:
+            pass
+
         shutil.rmtree(my_dir)
 
 
@@ -629,14 +633,14 @@ def test_make_file_cm(test_dir):
     with cm() as fh:
         fh.write("one\n")
 
-    with open(filename) as read_fh:
+    with open(filename, encoding="utf-8") as read_fh:
         assert read_fh.read() == "one\n"
 
     # Test appending to the file yielded by cm
     with cm() as fh:
         fh.write("two\n")
 
-    with open(filename) as read_fh:
+    with open(filename, encoding="utf-8") as read_fh:
         assert read_fh.read() == "one\ntwo\n"
 
 
