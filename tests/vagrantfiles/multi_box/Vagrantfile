@@ -8,8 +8,9 @@ boxes = ['alpine315', 'alpine37']
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   boxes.each do |box|
     config.vm.define box do |conf|
-      conf.vm.box = box
-      conf.vm.box_url = box
+      conf.vbguest.auto_update = false if Vagrant.has_plugin?("vagrant-vbguest")
+      conf.vm.hostname = box
+      conf.vm.box = "generic/#{box}"
     end
   end
 end
