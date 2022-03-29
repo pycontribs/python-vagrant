@@ -77,7 +77,11 @@ def fixture_test_dir() -> Generator[str, None, None]:
     # Removes the directory created initially, runs once after the last test
     sys.stderr.write("module teardown()\n")
     if my_dir is not None:
-        subprocess.check_call("vagrant destroy -f", cwd=my_dir, shell=True)
+        try:
+            subprocess.check_call("vagrant destroy -f", cwd=my_dir, shell=True)
+        except subprocess.CalledProcessError:
+            pass
+
         shutil.rmtree(my_dir)
 
 
