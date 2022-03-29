@@ -40,7 +40,7 @@ class VagrantTestCase(TestCase):
                 self.vagrant_boxes = ["default"]
             else:
                 self.vagrant_boxes = boxes
-        super(VagrantTestCase, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def assertBoxStatus(self, box, status):
         """Assertion for a box status"""
@@ -69,7 +69,7 @@ class VagrantTestCase(TestCase):
     def run(self, result=None):
         """Override run to have provide a hook into an alternative to tearDownClass with a reference to self"""
         self.setUpOnce()
-        run = super(VagrantTestCase, self).run(result)
+        run = super().run(result)
         self.tearDownOnce()
         return run
 
@@ -96,11 +96,11 @@ class VagrantTestCase(TestCase):
         for box_name in self.vagrant_boxes:
             self.vagrant.up(vm_name=box_name)
 
-        super(VagrantTestCase, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         """Returns boxes to their initial status after each test if self.restart_boxes is True"""
         if self.restart_boxes:
             self.restore_box_states()
 
-        super(VagrantTestCase, self).tearDown()
+        super().tearDown()
