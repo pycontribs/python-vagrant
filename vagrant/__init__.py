@@ -876,6 +876,13 @@ class Vagrant:
         output = self._run_vagrant_command(["plugin", "list", "--machine-readable"])
         return self._parse_plugin_list(output)
 
+    def validate(self):
+        """
+        This command validates present Vagrantfile.
+        """
+        output = self._run_vagrant_command(["validate"])
+        return output
+
     def _parse_plugin_list(self, output):
         """
         Remove Vagrant from the equation for unit testing.
