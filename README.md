@@ -9,12 +9,12 @@ virtual machines (boxes). This module is useful for:
 - Halting a Vagrant VM without destroying it (`halt`).
 - Querying the status of a VM or VMs (`status`).
 - Getting ssh configuration information useful for SSHing into the VM. (`host`, `port`, ...)
-- Running `vagrant` commands in a multi-VM environment
-  (http://vagrantup.com/v1/docs/multivm.html) by using `vm_name` parameter.
+- Running `vagrant` commands in a [multi-VM environment](http://vagrantup.com/v1/docs/multivm.html)
+  by using `vm_name` parameter.
 - Initializing the VM based on a named base box, using init().
 - Adding, Removing, and Listing boxes (`box add`, `box remove`, `box list`).
 - Provisioning VMs - up() accepts options like `no_provision`, `provision`, and `provision_with`, and there is a `provision()` method.
-- Using sandbox mode from the Sahara gem (https://github.com/jedi4ever/sahara).
+- Using sandbox mode from the [Sahara](https://github.com/jedi4ever/sahara) gem.
 
 This project began because I wanted python bindings for Vagrant so I could
 programmatically access my vagrant box using Fabric. Drop me a line to let me
@@ -48,51 +48,58 @@ backwards-compatible features or bug fixes are added.
 
 Download and install python-vagrant:
 
-    pip install python-vagrant
+```shell
+pip install python-vagrant
+```
 
 ### Install from github.com
 
 Clone and install python-vagrant
 
-    cd ~
-    git clone git@github.com:pycontribs/python-vagrant.git
-    cd python-vagrant
-    python setup.py install
+```shell
+cd ~
+git clone git@github.com:pycontribs/python-vagrant.git
+cd python-vagrant
+python setup.py install
+```
 
 ## Usage
 
 A contrived example of starting a vagrant box (using a Vagrantfile from the
 current directory) and running a fabric task on it:
 
-    import vagrant
-    from fabric.api import env, execute, task, run
+```python
+import vagrant
+from fabric.api import env, execute, task, run
 
-    @task
-    def mytask():
-        run('echo $USER')
+@task
+def mytask():
+    run('echo $USER')
 
-
-    v = vagrant.Vagrant()
-    v.up()
-    env.hosts = [v.user_hostname_port()]
-    env.key_filename = v.keyfile()
-    env.disable_known_hosts = True # useful for when the vagrant box ip changes.
-    execute(mytask) # run a fabric task on the vagrant host.
+v = vagrant.Vagrant()
+v.up()
+env.hosts = [v.user_hostname_port()]
+env.key_filename = v.keyfile()
+env.disable_known_hosts = True # useful for when the vagrant box ip changes.
+execute(mytask) # run a fabric task on the vagrant host.
+```
 
 Another example showing how to use vagrant multi-vm feature with fabric:
 
-    import vagrant
-    from fabric.api import *
+```python
+import vagrant
+from fabric.api import *
 
-    @task
-    def start(machine_name):
-       """Starts the specified machine using vagrant"""
-       v = vagrant.Vagrant()
-       v.up(vm_name=machine_name)
-       with settings(host_string= v.user_hostname_port(vm_name=machine_name),
-                     key_filename = v.keyfile(vm_name=machine_name),
-                     disable_known_hosts = True):
-            run("echo hello")
+@task
+def start(machine_name):
+   """Starts the specified machine using vagrant"""
+   v = vagrant.Vagrant()
+   v.up(vm_name=machine_name)
+   with settings(host_string= v.user_hostname_port(vm_name=machine_name),
+                 key_filename = v.keyfile(vm_name=machine_name),
+                 disable_known_hosts = True):
+        run("echo hello")
+```
 
 By default python vagrant instances are quiet, meaning that they capture stdout
 and stderr. For a "loud" instance, use `vagrant.Vagrant(quiet_stdout=False)`.
@@ -113,14 +120,18 @@ using the `out_cm` and `err_cm` parameters, or by using the `quiet_stdout` and
 
 Using `out_cm` and `err_cm` to redirect stdout and stderr to `/dev/null`:
 
-    v = vagrant.Vagrant(out_cm=vagrant.devnull_cm, err_cm=vagrant.devnull_cm)
-    v.up() # normally noisy
+```python
+v = vagrant.Vagrant(out_cm=vagrant.devnull_cm, err_cm=vagrant.devnull_cm)
+v.up() # normally noisy
+```
 
 Using `quiet_stdout` and `quiet_stderr` to redirect stdout and stderr to
 `/dev/null`:
 
-    v = vagrant.Vagrant(quiet_stdout=True, quiet_stderr=True)
-    v.up() # normally noisy
+```python
+v = vagrant.Vagrant(quiet_stdout=True, quiet_stderr=True)
+v.up() # normally noisy
+```
 
 These are functionally equivalent.
 
@@ -134,9 +145,11 @@ can be accomplished using the `out_cm` and `err_cm` parameters of
 For example, log the stdout and stderr of the subprocess to the file
 'deployment.log':
 
-    log_cm = vagrant.make_file_cm('deployment.log')
-    v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
-    v.up() # normally noisy
+```python
+log_cm = vagrant.make_file_cm('deployment.log')
+v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
+v.up() # normally noisy
+```
 
 #### Altering the Environment of the Vagrant Subprocess
 
@@ -172,8 +185,8 @@ v.up()  # will pass env to the vagrant subprocess
 ## Contribute
 
 If you use python and vagrant and this project does not do what you want,
-please open an issue or a pull request on github at
-https://github.com/todddeluca/python-vagrant.
+please open an issue or a pull request on
+[github](https://github.com/pycontribs/python-vagrant/edit/main/README.md).
 
 Please see CHANGELOG.md for a detailed list of contributions and authors.
 
@@ -187,11 +200,15 @@ downloading boxes and starting and stopping virtual machines several times.
 
 Run the tests from the top-level directory of the repository:
 
-    tox -e py
+```shell
+tox -e py
+```
 
 Here is an example of running an individual test:
 
-    tox -e py -- -k tests.test_vagrant:test_boxes
+```shell
+tox -e py -- -k tests.test_vagrant:test_boxes
+```
 
 Manual test of functionality for controlling where the vagrant subcommand
 output is sent -- console or devnull:
