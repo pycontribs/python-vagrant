@@ -524,6 +524,22 @@ class Vagrant:
         output = self._run_vagrant_command(["status", "--machine-readable", vm_name])
         return self._parse_status(output)
 
+    def _normalize_status(self, status, provider):
+        """
+        Normalise VM status to cope with state name being different
+        between providers
+        """
+        if provider == "virtualbox":
+            return status
+
+        if provider == "libvirt":
+            if status == "shutoff":
+                return self.POWEROFF
+            if status == "paused":
+                return self.SAVED
+
+        return status
+
     def _parse_status(self, output):
         """
         Unit testing is so much easier when Vagrant is removed from the
@@ -537,8 +553,9 @@ class Vagrant:
         for target, tuples in itertools.groupby(parsed, lambda tup: tup[1]):
             # transform tuples into a dict mapping "type" to "data"
             info = {kind: data for timestamp, _, kind, data in tuples}
+            state = self._normalize_status(info.get("state"), info.get("provider-name"))
             status = Status(
-                name=target, state=info.get("state"), provider=info.get("provider-name")
+                name=target, state=state, provider=info.get("provider-name")
             )
             statuses.append(status)
 
