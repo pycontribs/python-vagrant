@@ -271,6 +271,8 @@ def test_vm_status(vm_dir):
 def test_vm_lifecycle(vm_dir):
     """Test methods controlling the VM - init(), up(), suspend(), halt(), destroy()."""
     VAGRANT_DIR = f"{os.environ['HOME']}/.vagrant.d"
+    VAGRANTFILE_CREATED = False
+
     v = vagrant.Vagrant(vm_dir)
 
     # Test init by removing Vagrantfile, since v.init() will create one.
@@ -289,6 +291,7 @@ def test_vm_lifecycle(vm_dir):
             config.write(
                 'Vagrant.configure("2") do |config|\n  config.vbguest.auto_update = false\nend\n'
             )
+            VAGRANTFILE_CREATED = True
 
     v.init(TEST_BOX_NAME)
     assert v.NOT_CREATED == v.status()[0].state
@@ -307,6 +310,9 @@ def test_vm_lifecycle(vm_dir):
 
     v.destroy()
     assert v.NOT_CREATED == v.status()[0].state
+
+    if VAGRANTFILE_CREATED:
+        os.unlink(f"{VAGRANT_DIR}/Vagrantfile")
 
 
 def test_valid_config(vm_dir):
