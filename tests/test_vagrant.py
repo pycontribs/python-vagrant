@@ -75,15 +75,16 @@ def fixture_test_dir() -> Generator[str, None, None]:
     sys.stderr.write("test temp dir: {}\n".format(my_dir))
     boxes = list_box_names()
     if TEST_BOX_NAME not in boxes:
-        cmd = f"{VAGRANT_EXE} box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
-        subprocess.check_call(cmd, shell=True)
+        cmd = [VAGRANT_EXE, "box", "add", "--provider", TEST_PROVIDER, TEST_BOX_URL]
+        subprocess.check_call(cmd)
 
     yield my_dir
     # Removes the directory created initially, runs once after the last test
     sys.stderr.write("module teardown()\n")
     if my_dir is not None:
         try:
-            subprocess.check_call("vagrant destroy -f", cwd=my_dir, shell=True)
+            cmd = [VAGRANT_EXE, "destroy", "-f"]
+            subprocess.check_call(cmd, cwd=my_dir)
         except subprocess.CalledProcessError:
             pass
 
@@ -97,9 +98,7 @@ def list_box_names():
     even if the `Vagrant.box_list()` implementation is broken.
     """
     listing = compat.decode(
-        subprocess.check_output(
-            f"{VAGRANT_EXE} box list --machine-readable", shell=True
-        )
+        subprocess.check_output([VAGRANT_EXE, "box", "list", "--machine-readable"])
     )
     box_names = []
     for line in listing.splitlines():
@@ -132,7 +131,7 @@ def fixture_vm_dir(request: FixtureRequest, test_dir) -> Generator[str, None, No
     # It is not an error if a VM has already been destroyed.
     try:
         # Try to destroy any vagrant box that might be running.
-        subprocess.check_call(f"{VAGRANT_EXE} destroy -f", cwd=test_dir, shell=True)
+        subprocess.check_call([VAGRANT_EXE, "destroy", "-f"], cwd=test_dir)
     except subprocess.CalledProcessError:
         pass
     finally:
@@ -249,20 +248,20 @@ def test_vm_status(vm_dir):
     assert (
         v.NOT_CREATED == v.status()[0].state
     ), "Before going up status should be vagrant.NOT_CREATED"
-    command = f"{VAGRANT_EXE} up"
-    subprocess.check_call(command, cwd=vm_dir, shell=True)
+    command = [VAGRANT_EXE, "up"]
+    subprocess.check_call(command, cwd=vm_dir)
     assert (
         v.RUNNING in v.status()[0].state
     ), "After going up status should be vagrant.RUNNING"
 
-    command = f"{VAGRANT_EXE} halt"
-    subprocess.check_call(command, cwd=vm_dir, shell=True)
+    command = [VAGRANT_EXE, "halt"]
+    subprocess.check_call(command, cwd=vm_dir)
     assert (
         v.POWEROFF in v.status()[0].state
     ), "After halting status should be vagrant.POWEROFF"
 
-    command = f"{VAGRANT_EXE} destroy -f"
-    subprocess.check_call(command, cwd=vm_dir, shell=True)
+    command = [VAGRANT_EXE, "destroy", "-f"]
+    subprocess.check_call(command, cwd=vm_dir)
     assert (
         v.NOT_CREATED in v.status()[0].state
     ), "After destroying status should be vagrant.NOT_CREATED"
@@ -308,8 +307,8 @@ def test_vm_config(vm_dir):
     """
     v = vagrant.Vagrant(vm_dir)
     v.up()
-    command = f"{VAGRANT_EXE} ssh-config"
-    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
+    command = [VAGRANT_EXE, "ssh-config"]
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir))
     parsed_config = dict(
         line.strip().split(None, 1)
         for line in ssh_config.splitlines()
@@ -548,8 +547,8 @@ def test_multivm_config(vm_dir):
     """
     v = vagrant.Vagrant(vm_dir, quiet_stdout=False, quiet_stderr=False)
     v.up(vm_name=VM_1)
-    command = f"{VAGRANT_EXE} ssh-config " + VM_1
-    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
+    command = [VAGRANT_EXE, "ssh-config", VM_1]
+    ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir))
     parsed_config = dict(
         line.strip().split(None, 1)
         for line in ssh_config.splitlines()
