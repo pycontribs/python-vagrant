@@ -30,6 +30,20 @@ from _pytest.fixtures import FixtureRequest
 import vagrant
 from vagrant import compat
 
+
+# must be defined before TEST_PROVIDER.
+def get_provider() -> str:
+    """
+    Return the provider to use for testing and allow to set it
+    with PYTHON_VAGRANT_TEST_PROVIDER environment variable is set.
+    Defauts to virtualbox
+    """
+    my_prov = "virtualbox"
+    if "PYTHON_VAGRANT_TEST_PROVIDER" in os.environ:
+        my_prov = os.environ["PYTHON_VAGRANT_TEST_PROVIDER"]
+    return my_prov
+
+
 # location of Vagrant executable
 VAGRANT_EXE = vagrant.get_vagrant_executable()
 
@@ -53,7 +67,7 @@ VM_2 = "db"
 # name of the base box used for testing
 TEST_BOX_URL = "generic/alpine315"
 TEST_BOX_NAME = TEST_BOX_URL
-TEST_PROVIDER = "virtualbox"
+TEST_PROVIDER = get_provider()
 TEST_DUMMY_BOX_URL = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "tools", f"dummy-{TEST_PROVIDER}.box"
 )
