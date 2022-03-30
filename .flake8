@@ -51,6 +51,10 @@ extend-ignore =
   D205,
   D400,
   D401,
+  S101,   # Use of assert detected
+  S404,   # Consider possible security implications associated with subprocess module
+  S602,   # subprocess call with shell=True identified
+  S603,   # subprocess call
 
 # Allow certain violations in certain files:
 per-file-ignores =

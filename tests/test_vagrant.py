@@ -30,6 +30,9 @@ from _pytest.fixtures import FixtureRequest
 import vagrant
 from vagrant import compat
 
+# location of Vagrant executable
+VAGRANT_EXE = vagrant.get_vagrant_executable()
+
 # location of a test file on the created box by provisioning in vm_Vagrantfile
 TEST_FILE_PATH = "/home/vagrant/python_vagrant_test_file"
 # location of Vagrantfiles used for testing.
@@ -54,7 +57,6 @@ TEST_PROVIDER = "virtualbox"
 TEST_DUMMY_BOX_URL = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "tools", f"dummy-{TEST_PROVIDER}.box"
 )
-# temp dir for testing.
 
 
 @pytest.fixture(name="test_dir", scope="session")
@@ -73,7 +75,7 @@ def fixture_test_dir() -> Generator[str, None, None]:
     sys.stderr.write("test temp dir: {}\n".format(my_dir))
     boxes = list_box_names()
     if TEST_BOX_NAME not in boxes:
-        cmd = f"vagrant box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
+        cmd = f"{VAGRANT_EXE} box add --provider {TEST_PROVIDER} {TEST_BOX_URL}"
         subprocess.check_call(cmd, shell=True)
 
     yield my_dir
@@ -95,7 +97,9 @@ def list_box_names():
     even if the `Vagrant.box_list()` implementation is broken.
     """
     listing = compat.decode(
-        subprocess.check_output("vagrant box list --machine-readable", shell=True)
+        subprocess.check_output(
+            f"{VAGRANT_EXE} box list --machine-readable", shell=True
+        )
     )
     box_names = []
     for line in listing.splitlines():
@@ -128,7 +132,7 @@ def fixture_vm_dir(request: FixtureRequest, test_dir) -> Generator[str, None, No
     # It is not an error if a VM has already been destroyed.
     try:
         # Try to destroy any vagrant box that might be running.
-        subprocess.check_call("vagrant destroy -f", cwd=test_dir, shell=True)
+        subprocess.check_call(f"{VAGRANT_EXE} destroy -f", cwd=test_dir, shell=True)
     except subprocess.CalledProcessError:
         pass
     finally:
@@ -245,19 +249,19 @@ def test_vm_status(vm_dir):
     assert (
         v.NOT_CREATED == v.status()[0].state
     ), "Before going up status should be vagrant.NOT_CREATED"
-    command = "vagrant up"
+    command = f"{VAGRANT_EXE} up"
     subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.RUNNING in v.status()[0].state
     ), "After going up status should be vagrant.RUNNING"
 
-    command = "vagrant halt"
+    command = f"{VAGRANT_EXE} halt"
     subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.POWEROFF in v.status()[0].state
     ), "After halting status should be vagrant.POWEROFF"
 
-    command = "vagrant destroy -f"
+    command = f"{VAGRANT_EXE} destroy -f"
     subprocess.check_call(command, cwd=vm_dir, shell=True)
     assert (
         v.NOT_CREATED in v.status()[0].state
@@ -296,7 +300,7 @@ def test_vm_config(vm_dir):
     """
     v = vagrant.Vagrant(vm_dir)
     v.up()
-    command = "vagrant ssh-config"
+    command = f"{VAGRANT_EXE} ssh-config"
     ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
     parsed_config = dict(
         line.strip().split(None, 1)
@@ -451,7 +455,7 @@ def test_boxesvm(test_dir):
 
     # Start fresh with no dummy box
     if box_name in list_box_names():
-        subprocess.check_call(["vagrant", "box", "remove", box_name])
+        subprocess.check_call([f"{VAGRANT_EXE}", "box", "remove", box_name])
 
     # Test that there is no dummy box listed
     assert box_name not in [
@@ -536,7 +540,7 @@ def test_multivm_config(vm_dir):
     """
     v = vagrant.Vagrant(vm_dir, quiet_stdout=False, quiet_stderr=False)
     v.up(vm_name=VM_1)
-    command = "vagrant ssh-config " + VM_1
+    command = f"{VAGRANT_EXE} ssh-config " + VM_1
     ssh_config = compat.decode(subprocess.check_output(command, cwd=vm_dir, shell=True))
     parsed_config = dict(
         line.strip().split(None, 1)
@@ -648,13 +652,8 @@ def _execute_command_in_vm(v, command):
     Run command via ssh on the test vagrant box.  Returns a tuple of the
     return code and output of the command.
     """
-    vagrant_exe = vagrant.get_vagrant_executable()
-
-    if not vagrant_exe:
-        raise RuntimeError(vagrant.VAGRANT_NOT_FOUND_WARNING)
-
     # ignore the fact that this host is not in our known hosts
-    ssh_command = [vagrant_exe, "ssh", "-c", command]
+    ssh_command = [VAGRANT_EXE, "ssh", "-c", command]
     return compat.decode(subprocess.check_output(ssh_command, cwd=v.root))
 
 
