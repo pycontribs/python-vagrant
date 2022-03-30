@@ -294,6 +294,14 @@ def test_vm_lifecycle(vm_dir):
     assert v.NOT_CREATED == v.status()[0].state
 
 
+def test_valid_config(vm_dir):
+    v = vagrant.Vagrant(vm_dir)
+    v.up()
+    validation = v.validate(vm_dir)
+
+    assert validation.returncode == 0
+
+
 def test_vm_config(vm_dir):
     """
     Test methods retrieving ssh config settings, like user, hostname, and port.
