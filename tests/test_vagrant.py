@@ -286,8 +286,9 @@ def test_vm_lifecycle(vm_dir):
 def test_valid_config(vm_dir):
     v = vagrant.Vagrant(vm_dir)
     v.up()
-    output = v.validate()
-    assert output.strip() == "Vagrantfile validated successfully."
+    validation = v.validate(vm_dir)
+
+    assert validation.returncode == 0
 
 
 def test_vm_config(vm_dir):
