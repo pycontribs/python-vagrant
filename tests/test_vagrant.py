@@ -289,7 +289,7 @@ def test_vm_lifecycle(vm_dir):
     if not os.path.isfile(f"{VAGRANT_DIR}/Vagrantfile"):
         with open(f"{VAGRANT_DIR}/Vagrantfile", "w", encoding="UTF-8") as config:
             config.write(
-                'Vagrant.configure("2") do |config|\n  config.vbguest.auto_update = false\nend\n'
+                'Vagrant.configure("2") do |config|\n  config.vbguest.auto_update = false if Vagrant.has_plugin?("vagrant-vbguest")\nend\n'
             )
             VAGRANTFILE_CREATED = True
 
