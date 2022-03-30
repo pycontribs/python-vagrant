@@ -54,6 +54,9 @@ VM_2 = "db"
 TEST_BOX_URL = "generic/alpine315"
 TEST_BOX_NAME = TEST_BOX_URL
 TEST_PROVIDER = "virtualbox"
+TEST_DUMMY_BOX_URL = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "tools", f"dummy-{TEST_PROVIDER}.box"
+)
 
 
 @pytest.fixture(name="test_dir", scope="session")
@@ -459,7 +462,7 @@ def test_boxesvm(test_dir):
         b.name for b in v.box_list()
     ], "There should be no dummy box before it's added."
     # Add a box
-    v.box_add(box_name, TEST_BOX_URL)
+    v.box_add(box_name, TEST_DUMMY_BOX_URL)
 
     # Test that there is a dummy box listed
     box_listing = v.box_list()
@@ -600,7 +603,7 @@ def test_streaming_output(vm_dir):
     """
     Test streaming output of up or reload.
     """
-    test_string = "Waiting for machine to boot."
+    test_string = "Machine already provisioned"
     v = vagrant.Vagrant(vm_dir)
 
     with pytest.raises(subprocess.CalledProcessError):
