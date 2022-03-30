@@ -459,7 +459,7 @@ def test_boxesvm(test_dir):
     """
     v = vagrant.Vagrant(test_dir)
     box_name = "python-vagrant-dummy-box"
-    provider = "virtualbox"
+    provider = f"{TEST_PROVIDER}"
 
     # Start fresh with no dummy box
     if box_name in list_box_names():
