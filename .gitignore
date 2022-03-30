@@ -16,3 +16,4 @@ Vagrantfile
 /dist/
 /python_vagrant.egg-info/
 *.egg-info/
+*.box
