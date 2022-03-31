@@ -8,15 +8,15 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-if [ -f "$DIR/dummy.box" ]; then
+if [ -f "${DIR}/dummy.box" ]; then
 	echo "Box already created"
 	exit 0
 fi
 
 PROVIDER="$1"
-TMPDIR=`mktemp -d`
-cd "$TMPDIR"
+TMPDIR="$(mktemp -d)"
+cd "${TMPDIR}" || exit 1
 echo "{ \"provider\": \"$PROVIDER\"}" > metadata.json
-tar czf "$DIR/dummy-$PROVIDER.box" .
-cd "$DIR"
-rm -rf "$TMPDIR"
+tar czf "${DIR}/dummy-$PROVIDER.box" .
+cd "${DIR}" || exit 1
+rm -rvf "${TMPDIR}"
