@@ -2,7 +2,7 @@
 vagrant.compat
 --------------
 
-Python 2/3 compatiblity module.
+Python 2/3 compatibility module.
 """
 
 # std

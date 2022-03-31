@@ -661,7 +661,7 @@ class Vagrant:
     def user_hostname(self, vm_name=None):
         """
         Return a string combining user and hostname, e.g. 'vagrant@127.0.0.1'.
-        This string is suitable for use in an ssh commmand.  If user is None
+        This string is suitable for use in an ssh command.  If user is None
         or empty, it will be left out of the string, e.g. 'localhost'.  If
         hostname is None, have bigger problems.
 
@@ -1019,7 +1019,7 @@ class Vagrant:
             raise RuntimeError(VAGRANT_NOT_FOUND_WARNING)
 
         # filter out None args.  Since vm_name is None in non-Multi-VM
-        # environments, this quitely removes it from the arguments list
+        # environments, this quietly removes it from the arguments list
         # when it is not specified.
         return [self._vagrant_exe] + [arg for arg in args if arg is not None]
 
