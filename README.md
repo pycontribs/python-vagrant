@@ -186,9 +186,11 @@ v.up()  # will pass env to the vagrant subprocess
 
 If you use python and vagrant and this project does not do what you want,
 please open an issue or a pull request on
-[github](https://github.com/pycontribs/python-vagrant/edit/main/README.md).
+[GitHub](https://github.com/pycontribs/python-vagrant).
 
-Please see CHANGELOG.md for a detailed list of contributions and authors.
+Please see [CHANGELOG.md](CHANGELOG.md) and
+[Releases](https://github.com/pycontribs/python-vagrant/releases)
+for a detailed list of updates, contributions and authors.
 
 When making a pull request, please include unit tests that test your changes
 and make sure any existing tests still work. See the Testing section below.

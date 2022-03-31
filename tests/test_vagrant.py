@@ -37,7 +37,7 @@ def get_provider() -> str:
     """
     Return the provider to use for testing and allow to set it
     with PYTHON_VAGRANT_TEST_PROVIDER environment variable is set.
-    Defauts to virtualbox
+    Defaults to virtualbox.
     """
     my_prov = "virtualbox"
     if "PYTHON_VAGRANT_TEST_PROVIDER" in os.environ:
