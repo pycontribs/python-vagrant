@@ -17,3 +17,4 @@ Vagrantfile
 /python_vagrant.egg-info/
 *.egg-info/
 *.box
+src/vagrant/_version.py

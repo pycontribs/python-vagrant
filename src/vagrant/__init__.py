@@ -24,10 +24,11 @@ import logging
 from . import compat
 
 
-# python package version
-# should match r"^__version__ = '(?P<version>[^']+)'$" for setup.py
-__version__ = "0.5.15"
-
+# python package version dumped by setuptools-scm
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
 
 log = logging.getLogger(__name__)
 
