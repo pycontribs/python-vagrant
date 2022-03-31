@@ -16,6 +16,7 @@ to avoid downloading of the box file on every run.
 
 from __future__ import print_function
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -326,6 +327,20 @@ def test_vm_lifecycle(vm_dir):
 
     if VAGRANTFILE_CREATED:
         os.unlink(f"{VAGRANT_DIR}/Vagrantfile")
+
+
+def test_vm_resumecycle(vm_dir):
+    """Test methods controlling the VM - up(), suspend(), resume()."""
+    v = vagrant.Vagrant(vm_dir)
+
+    v.up()
+    assert v.RUNNING == v.status()[0].state
+
+    v.suspend()
+    assert v.SAVED == v.status()[0].state
+
+    v.resume()
+    assert v.RUNNING == v.status()[0].state
 
 
 def test_valid_config(vm_dir):
@@ -686,6 +701,14 @@ def test_make_file_cm(test_dir):
 
     with open(filename, encoding="utf-8") as read_fh:
         assert read_fh.read() == "one\ntwo\n"
+
+
+def test_vagrant_version():
+    v = vagrant.Vagrant()
+    VAGRANT_VERSION = v.version()
+    sys.stdout.write(f"vagrant_version(): {VAGRANT_VERSION}\n")
+    version_result = bool(re.match("^[0-9.]+$", VAGRANT_VERSION))
+    assert version_result is True
 
 
 def _execute_command_in_vm(v, command):
