@@ -308,6 +308,20 @@ def test_vm_lifecycle(vm_dir):
     assert v.NOT_CREATED == v.status()[0].state
 
 
+def test_vm_resumecycle(vm_dir):
+    """Test methods controlling the VM - up(), suspend(), resume()."""
+    v = vagrant.Vagrant(vm_dir)
+
+    v.up()
+    assert v.RUNNING == v.status()[0].state
+
+    v.suspend()
+    assert v.SAVED == v.status()[0].state
+
+    v.resume()
+    assert v.RUNNING == v.status()[0].state
+
+
 def test_valid_config(vm_dir):
     v = vagrant.Vagrant(vm_dir)
     v.up()
