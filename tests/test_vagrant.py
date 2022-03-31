@@ -16,6 +16,7 @@ to avoid downloading of the box file on every run.
 
 from __future__ import print_function
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -666,6 +667,14 @@ def test_make_file_cm(test_dir):
 
     with open(filename, encoding="utf-8") as read_fh:
         assert read_fh.read() == "one\ntwo\n"
+
+
+def test_vagrant_version():
+    v = vagrant.Vagrant()
+    VAGRANT_VERSION = v.version()
+    sys.stdout.write(f"vagrant_version(): {VAGRANT_VERSION}\n")
+    version_result = bool(re.match("^[0-9.]+$", VAGRANT_VERSION))
+    assert version_result is True
 
 
 def _execute_command_in_vm(v, command):
