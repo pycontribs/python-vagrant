@@ -4,7 +4,7 @@ A TestCase class, tying together the Vagrant class.
 It also removes some of the boilerplate involved in writing tests that leverage
 vagrant boxes.
 """
-from typing import Dict, List
+from typing import Dict, List, Optional
 from unittest import TestCase
 from vagrant import Vagrant, stderr_cm
 
@@ -22,7 +22,7 @@ class VagrantTestCase(TestCase):
     """
 
     vagrant_boxes: List[str] = []
-    vagrant_root = None
+    vagrant_root: Optional[str] = None
     restart_boxes = False
 
     __initial_box_statuses: Dict[str, str] = {}
@@ -43,7 +43,7 @@ class VagrantTestCase(TestCase):
                 self.vagrant_boxes = boxes
         super().__init__(*args, **kwargs)
 
-    def assertBoxStatus(self, box, status):
+    def assertBoxStatus(self, box: str, status: str) -> None:
         """Assertion for a box status"""
         box_status = [s.state for s in self.vagrant.status() if s.name == box][0]
         if box_status != status:
@@ -51,19 +51,19 @@ class VagrantTestCase(TestCase):
                 "{} has status {}, not {}".format(box, box_status, status)
             )
 
-    def assertBoxUp(self, box):
+    def assertBoxUp(self, box: str) -> None:
         """Assertion for a box being up"""
         self.assertBoxStatus(box, Vagrant.RUNNING)
 
-    def assertBoxSuspended(self, box):
+    def assertBoxSuspended(self, box: str) -> None:
         """Assertion for a box being up"""
         self.assertBoxStatus(box, Vagrant.SAVED)
 
-    def assertBoxHalted(self, box):
+    def assertBoxHalted(self, box: str) -> None:
         """Assertion for a box being up"""
         self.assertBoxStatus(box, Vagrant.POWEROFF)
 
-    def assertBoxNotCreated(self, box):
+    def assertBoxNotCreated(self, box: str) -> None:
         """Assertion for a box being up"""
         self.assertBoxStatus(box, Vagrant.NOT_CREATED)
 
@@ -74,18 +74,18 @@ class VagrantTestCase(TestCase):
         self.tearDownOnce()
         return run
 
-    def setUpOnce(self):
+    def setUpOnce(self) -> None:
         """Collect the box states before starting"""
         for box_name in self.vagrant_boxes:
             s = self.vagrant.status(vm_name=box_name)[0]
             self.__initial_box_statuses[box_name] = s.state
 
-    def tearDownOnce(self):
+    def tearDownOnce(self) -> None:
         """Restore all boxes to their initial states after running all tests, unless tearDown handled it already"""
         if not self.restart_boxes:
             self.restore_box_states()
 
-    def restore_box_states(self):
+    def restore_box_states(self) -> None:
         """Restores all boxes to their original states"""
         for box_name in self.vagrant_boxes:
             action = self.__cleanup_actions.get(self.__initial_box_statuses[box_name])

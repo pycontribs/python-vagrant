@@ -22,7 +22,8 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Generator
+import typing
+from typing import Generator, List, Optional
 
 
 import pytest
@@ -46,7 +47,7 @@ def get_provider() -> str:
 
 
 # location of Vagrant executable
-VAGRANT_EXE = vagrant.get_vagrant_executable()
+VAGRANT_EXE = typing.cast(str, vagrant.get_vagrant_executable())
 
 # location of a test file on the created box by provisioning in vm_Vagrantfile
 TEST_FILE_PATH = "/home/vagrant/python_vagrant_test_file"
@@ -106,7 +107,7 @@ def fixture_test_dir() -> Generator[str, None, None]:
         shutil.rmtree(my_dir)
 
 
-def list_box_names():
+def list_box_names() -> List[str]:
     """
     Return a list of the currently installed vagrant box names.  This is
     implemented outside of `vagrant.Vagrant`, so that it will still work
@@ -714,7 +715,7 @@ def test_streaming_output(vm_dir):
         v.up(vm_name="incorrect-name")
 
     streaming_up = False
-    for line in v.up(stream_output=True):
+    for line in v.up(stream_output=True):  # type: ignore
         print("output line:", line)
         if test_string in line:
             streaming_up = True
@@ -722,7 +723,7 @@ def test_streaming_output(vm_dir):
     assert streaming_up
 
     streaming_reload = False
-    for line in v.reload(stream_output=True):
+    for line in v.reload(stream_output=True):  # type: ignore
         print("output line:", line)
         if test_string in line:
             streaming_reload = True
@@ -759,7 +760,7 @@ def test_vagrant_version():
     assert version_result is True
 
 
-def _execute_command_in_vm(v, command):
+def _execute_command_in_vm(v, command) -> str:
     """
     Run command via ssh on the test vagrant box.  Returns a tuple of the
     return code and output of the command.
@@ -769,7 +770,7 @@ def _execute_command_in_vm(v, command):
     return compat.decode(subprocess.check_output(ssh_command, cwd=v.root))
 
 
-def _write_test_file(v, file_contents):
+def _write_test_file(v, file_contents) -> None:
     """
     Writes given contents to the test file.
     """
@@ -777,7 +778,7 @@ def _write_test_file(v, file_contents):
     _execute_command_in_vm(v, command)
 
 
-def _read_test_file(v):
+def _read_test_file(v) -> Optional[str]:
     """
     Returns the contents of the test file stored in the VM or None if there
     is no file.
@@ -790,6 +791,6 @@ def _read_test_file(v):
         return None
 
 
-def _plugin_installed(v, plugin_name):
+def _plugin_installed(v, plugin_name) -> bool:
     plugins = v.plugin_list()
     return plugin_name in [plugin.name for plugin in plugins]

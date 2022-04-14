@@ -20,6 +20,7 @@ import subprocess
 import sys
 import logging
 import typing
+from typing import Dict, Iterator, List, Optional, Union
 
 # local
 from . import compat
@@ -43,7 +44,7 @@ VAGRANT_NOT_FOUND_WARNING = (
 )
 
 
-def which(program):  # noqa C901
+def which(program) -> Optional[str]:  # noqa C901
     """
     Emulate unix 'which' command.  If program is a path to an executable file
     (i.e. it contains any directory components, like './myscript'), return
@@ -63,7 +64,7 @@ def which(program):  # noqa C901
     https://hg.python.org/cpython/file/default/Lib/shutil.py
     """
 
-    def is_exe(fpath):
+    def is_exe(fpath) -> bool:
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
     # Shortcut: If program contains any dir components, do not search the path
@@ -129,7 +130,7 @@ def which(program):  # noqa C901
 
 
 # The full path to the vagrant executable, e.g. '/usr/bin/vagrant'
-def get_vagrant_executable():
+def get_vagrant_executable() -> Optional[str]:
     return which("vagrant")
 
 
@@ -175,7 +176,7 @@ def none_cm():
     yield None
 
 
-def make_file_cm(filename, mode="a"):
+def make_file_cm(filename, mode="a") -> typing.Callable[[], typing.ContextManager]:
     """
     Open a file for appending and yield the open filehandle.  Close the
     filehandle after yielding it.  This is useful for creating a context
@@ -231,7 +232,7 @@ class Vagrant:
         env=None,
         out_cm=None,
         err_cm=None,
-    ):
+    ) -> None:
         """
         root: a directory containing a file named Vagrantfile.  Defaults to
           os.getcwd(). This is the directory and Vagrantfile that the Vagrant
@@ -259,8 +260,8 @@ class Vagrant:
           will be sent to devnull.
         """
         self.root = os.path.abspath(root) if root is not None else os.getcwd()
-        self._cached_conf = {}
-        self._vagrant_exe = None  # cache vagrant executable path
+        self._cached_conf: Dict[str, Optional[Dict[str, str]]] = {}
+        self._vagrant_exe: Optional[str] = None  # cache vagrant executable path
         self.env = env
         if out_cm is not None:
             self.out_cm = out_cm
@@ -280,7 +281,7 @@ class Vagrant:
         else:
             self.err_cm = none_cm
 
-    def version(self):
+    def version(self) -> str:
         """
         Return the installed vagrant version, as a string, e.g. '1.5.0'
         """
@@ -292,7 +293,7 @@ class Vagrant:
             )
         return m.group("version")
 
-    def init(self, box_name=None, box_url=None):
+    def init(self, box_name=None, box_url=None) -> None:
         """
         From the Vagrant docs:
 
@@ -316,7 +317,7 @@ class Vagrant:
         provision=None,
         provision_with=None,
         stream_output=False,
-    ):
+    ) -> Optional[Iterator[str]]:
         """
         Invoke `vagrant up` to start a box or boxes, possibly streaming the
         command output.
@@ -369,7 +370,7 @@ class Vagrant:
         self._cached_conf[vm_name] = None  # remove cached configuration
         return generator if stream_output else None
 
-    def provision(self, vm_name=None, provision_with=None):
+    def provision(self, vm_name=None, provision_with=None) -> None:
         """
         Runs the provisioners defined in the Vagrantfile.
         vm_name: optional VM name string.
@@ -382,7 +383,7 @@ class Vagrant:
 
     def reload(
         self, vm_name=None, provision=None, provision_with=None, stream_output=False
-    ):
+    ) -> Optional[Iterator[str]]:
         """
         Quoting from Vagrant docs:
         > The equivalent of running a halt followed by an up.
@@ -422,21 +423,21 @@ class Vagrant:
         self._cached_conf[vm_name] = None  # remove cached configuration
         return generator if stream_output else None
 
-    def suspend(self, vm_name=None):
+    def suspend(self, vm_name=None) -> None:
         """
         Suspend/save the machine.
         """
         self._call_vagrant_command(["suspend", vm_name])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def resume(self, vm_name=None):
+    def resume(self, vm_name=None) -> None:
         """
         Resume suspended machine.
         """
         self._call_vagrant_command(["resume", vm_name])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def halt(self, vm_name=None, force=False):
+    def halt(self, vm_name=None, force=False) -> None:
         """
         Halt the Vagrant box.
 
@@ -446,14 +447,14 @@ class Vagrant:
         self._call_vagrant_command(["halt", vm_name, force_opt])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def destroy(self, vm_name=None):
+    def destroy(self, vm_name=None) -> None:
         """
         Terminate the running Vagrant box.
         """
         self._call_vagrant_command(["destroy", vm_name, "--force"])
         self._cached_conf[vm_name] = None  # remove cached configuration
 
-    def status(self, vm_name=None):
+    def status(self, vm_name=None) -> List[Status]:
         r"""
         Return the results of a `vagrant status` call as a list of one or more
         Status objects.  A Status contains the following attributes:
@@ -547,7 +548,7 @@ class Vagrant:
         output = self._run_vagrant_command(cmd)
         return self._parse_global_status(output)
 
-    def _normalize_status(self, status, provider):
+    def _normalize_status(self, status, provider) -> str:
         """
         Normalise VM status to cope with state name being different
         between providers
@@ -563,7 +564,7 @@ class Vagrant:
 
         return status
 
-    def _parse_status(self, output):
+    def _parse_status(self, output) -> List[Status]:
         """
         Unit testing is so much easier when Vagrant is removed from the
         equation.
@@ -584,7 +585,7 @@ class Vagrant:
 
         return statuses
 
-    def _parse_global_status(self, output):
+    def _parse_global_status(self, output: str) -> List[GlobalStatus]:
         """
         Unit testing is so much easier when Vagrant is removed from the
         equation.
@@ -610,7 +611,7 @@ class Vagrant:
                 vm_id = state = provider = home = None
         return statuses
 
-    def conf(self, ssh_config=None, vm_name=None):
+    def conf(self, ssh_config=None, vm_name=None) -> Dict[str, str]:
         """
         Parse ssh_config into a dict containing the keys defined in ssh_config,
         which should include these keys (listed with example values): 'User'
@@ -640,7 +641,7 @@ class Vagrant:
             self._cached_conf[vm_name] = conf
         return conf
 
-    def ssh_config(self, vm_name=None):
+    def ssh_config(self, vm_name=None) -> str:
         """
         Return the output of 'vagrant ssh-config' which appears to be a valid
         Host section suitable for use in an ssh config file.
@@ -663,7 +664,7 @@ class Vagrant:
         # capture ssh configuration from vagrant
         return self._run_vagrant_command(["ssh-config", vm_name])
 
-    def user(self, vm_name=None):
+    def user(self, vm_name=None) -> Optional[str]:
         """
         Return the ssh user of the vagrant box, e.g. 'vagrant'
         or None if there is no user in the ssh_config.
@@ -673,7 +674,7 @@ class Vagrant:
         """
         return self.conf(vm_name=vm_name).get("User")
 
-    def hostname(self, vm_name=None):
+    def hostname(self, vm_name=None) -> Optional[str]:
         """
         Return the vagrant box hostname, e.g. '127.0.0.1'
         or None if there is no hostname in the ssh_config.
@@ -683,7 +684,7 @@ class Vagrant:
         """
         return self.conf(vm_name=vm_name).get("HostName")
 
-    def port(self, vm_name=None):
+    def port(self, vm_name=None) -> Optional[str]:
         """
         Return the vagrant box ssh port, e.g. '2222'
         or None if there is no port in the ssh_config.
@@ -693,7 +694,7 @@ class Vagrant:
         """
         return self.conf(vm_name=vm_name).get("Port")
 
-    def keyfile(self, vm_name=None):
+    def keyfile(self, vm_name=None) -> Optional[str]:
         """
         Return the path to the private key used to log in to the vagrant box
         or None if there is no keyfile (IdentityFile) in the ssh_config.
@@ -706,7 +707,7 @@ class Vagrant:
         """
         return self.conf(vm_name=vm_name).get("IdentityFile")
 
-    def user_hostname(self, vm_name=None):
+    def user_hostname(self, vm_name=None) -> str:
         """
         Return a string combining user and hostname, e.g. 'vagrant@127.0.0.1'.
         This string is suitable for use in an ssh command.  If user is None
@@ -723,7 +724,7 @@ class Vagrant:
         user_prefix = user + "@" if user else ""
         return user_prefix + hostname
 
-    def user_hostname_port(self, vm_name=None):
+    def user_hostname_port(self, vm_name=None) -> str:
         """
         Return a string combining user, hostname and port, e.g.
         'vagrant@127.0.0.1:2222'.  This string is suitable for use with Fabric,
@@ -744,7 +745,7 @@ class Vagrant:
         port_suffix = ":" + port if port else ""
         return user_prefix + hostname + port_suffix
 
-    def box_add(self, name, url, provider=None, force=False):
+    def box_add(self, name, url, provider=None, force=False) -> None:
         """
         Adds a box with given name, from given url.
 
@@ -757,7 +758,7 @@ class Vagrant:
 
         self._call_vagrant_command(cmd)
 
-    def box_list(self):
+    def box_list(self) -> List[Box]:
         """
         Run `vagrant box list --machine-readable` and return a list of Box
         objects containing the results.  A Box object has the following
@@ -854,7 +855,7 @@ class Vagrant:
         """
         self._call_vagrant_command(["snapshot", "delete", name])
 
-    def ssh(self, vm_name=None, command=None, extra_ssh_args=None):
+    def ssh(self, vm_name=None, command=None, extra_ssh_args=None) -> str:
         """
         Execute a command via ssh on the vm specified.
         command: The command to execute via ssh.
@@ -867,7 +868,7 @@ class Vagrant:
 
         return self._run_vagrant_command(cmd)
 
-    def _parse_box_list(self, output):
+    def _parse_box_list(self, output) -> List[Box]:
         """
         Remove Vagrant usage for unit testing
         """
@@ -898,14 +899,14 @@ class Vagrant:
 
         return boxes
 
-    def box_update(self, name, provider):
+    def box_update(self, name, provider) -> None:
         """
         Updates the box matching name and provider. It is an error if no box
         matches name and provider.
         """
         self._call_vagrant_command(["box", "update", name, provider])
 
-    def box_remove(self, name, provider):
+    def box_remove(self, name, provider) -> None:
         """
         Removes the box matching name and provider. It is an error if no box
         matches name and provider.
@@ -948,7 +949,7 @@ class Vagrant:
         output = self._run_vagrant_command(["plugin", "list", "--machine-readable"])
         return self._parse_plugin_list(output)
 
-    def validate(self, directory):
+    def validate(self, directory) -> subprocess.CompletedProcess:
         """
         This command validates present Vagrantfile.
         """
@@ -962,7 +963,7 @@ class Vagrant:
 
         return validate
 
-    def _parse_plugin_list(self, output):
+    def _parse_plugin_list(self, output) -> List[Plugin]:
         """
         Remove Vagrant from the equation for unit testing.
         """
@@ -999,7 +1000,7 @@ class Vagrant:
 
         return plugins
 
-    def _parse_machine_readable_output(self, output):
+    def _parse_machine_readable_output(self, output: str) -> List[List[str]]:
         """Parse machine readable output from vagrant commands.
 
         param output: a string containing the output of a vagrant command with the `--machine-readable` option.
@@ -1030,7 +1031,7 @@ class Vagrant:
         parsed_lines = list(filter(lambda x: x[2] not in unneeded_kind, parsed_lines))
         return parsed_lines
 
-    def _parse_config(self, ssh_config):
+    def _parse_config(self, ssh_config: str) -> Dict[str, str]:
         r"""
         This lame parser does not parse the full grammar of an ssh config
         file.  It makes assumptions that are (hopefully) correct for the output
@@ -1065,7 +1066,7 @@ class Vagrant:
             conf[key] = value.strip('"')
         return conf
 
-    def _make_vagrant_command(self, args):
+    def _make_vagrant_command(self, args: List[Union[str, None]]) -> List[str]:
         if self._vagrant_exe is None:
             self._vagrant_exe = get_vagrant_executable()
 
@@ -1077,7 +1078,7 @@ class Vagrant:
         # when it is not specified.
         return [self._vagrant_exe] + [arg for arg in args if arg is not None]
 
-    def _call_vagrant_command(self, args):
+    def _call_vagrant_command(self, args) -> None:
         """
         Run a vagrant command.  Return None.
         args: A sequence of arguments to a vagrant command line.
@@ -1090,7 +1091,7 @@ class Vagrant:
                 command, cwd=self.root, stdout=out_fh, stderr=err_fh, env=self.env
             )
 
-    def _run_vagrant_command(self, args):
+    def _run_vagrant_command(self, args) -> str:
         """
         Run a vagrant command and return its stdout.
         args: A sequence of arguments to a vagrant command line.
@@ -1106,7 +1107,7 @@ class Vagrant:
                 )
             )
 
-    def _stream_vagrant_command(self, args):
+    def _stream_vagrant_command(self, args) -> Iterator[str]:
         """
         Execute a vagrant command, returning a generator of the output lines.
         Caller should consume the entire generator to avoid the hanging the
@@ -1145,22 +1146,22 @@ class SandboxVagrant(Vagrant):
     Support for sandbox mode using the Sahara gem (https://github.com/jedi4ever/sahara).
     """
 
-    def _run_sandbox_command(self, args):
+    def _run_sandbox_command(self, args) -> str:
         return self._run_vagrant_command(["sandbox"] + list(args))
 
-    def sandbox_commit(self, vm_name=None):
+    def sandbox_commit(self, vm_name=None) -> None:
         """
         Permanently writes all the changes made to the VM.
         """
         self._run_sandbox_command(["commit", vm_name])
 
-    def sandbox_off(self, vm_name=None):
+    def sandbox_off(self, vm_name=None) -> None:
         """
         Disables the sandbox mode.
         """
         self._run_sandbox_command(["off", vm_name])
 
-    def sandbox_on(self, vm_name=None):
+    def sandbox_on(self, vm_name=None) -> None:
         """
         Enables the sandbox mode.
 
@@ -1169,13 +1170,13 @@ class SandboxVagrant(Vagrant):
         """
         self._run_sandbox_command(["on", vm_name])
 
-    def sandbox_rollback(self, vm_name=None):
+    def sandbox_rollback(self, vm_name=None) -> None:
         """
         Reverts all the changes made to the VM since the last commit.
         """
         self._run_sandbox_command(["rollback", vm_name])
 
-    def sandbox_status(self, vm_name=None):
+    def sandbox_status(self, vm_name=None) -> str:
         """
         Returns the status of the sandbox mode.
 
@@ -1188,7 +1189,7 @@ class SandboxVagrant(Vagrant):
         vagrant_sandbox_output = self._run_sandbox_command(["status", vm_name])
         return self._parse_vagrant_sandbox_status(vagrant_sandbox_output)
 
-    def _parse_vagrant_sandbox_status(self, vagrant_output):
+    def _parse_vagrant_sandbox_status(self, vagrant_output) -> str:
         """
         Returns the status of the sandbox mode given output from
         'vagrant sandbox status'.
