@@ -717,8 +717,11 @@ class Vagrant:
         has been destroyed.
         """
         user = self.user(vm_name=vm_name)
+        hostname = self.hostname(vm_name=vm_name)
+        if hostname is None:
+            raise ValueError("Missing hostname for vm_name={vm_name!r}")
         user_prefix = user + "@" if user else ""
-        return user_prefix + self.hostname(vm_name=vm_name)
+        return user_prefix + hostname
 
     def user_hostname_port(self, vm_name=None):
         """
@@ -734,9 +737,12 @@ class Vagrant:
         """
         user = self.user(vm_name=vm_name)
         port = self.port(vm_name=vm_name)
+        hostname = self.hostname(vm_name=vm_name)
+        if hostname is None:
+            raise ValueError("Missing hostname for vm_name={vm_name!r}")
         user_prefix = user + "@" if user else ""
         port_suffix = ":" + port if port else ""
-        return user_prefix + self.hostname(vm_name=vm_name) + port_suffix
+        return user_prefix + hostname + port_suffix
 
     def box_add(self, name, url, provider=None, force=False):
         """
