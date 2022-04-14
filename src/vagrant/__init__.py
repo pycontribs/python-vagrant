@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 import logging
+import typing
 
 # local
 from . import compat
@@ -1123,8 +1124,9 @@ class Vagrant:
             # Iterate over output lines.
             # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
             with subprocess.Popen(**sp_args) as p:
-                with p.stdout:
-                    for line in iter(p.stdout.readline, b""):
+                stdout = typing.cast(typing.IO, p.stdout)
+                with stdout:
+                    for line in iter(stdout.readline, b""):
                         yield compat.decode(line)  # if PY3 decode bytestrings
                 p.wait()
                 # Raise CalledProcessError for consistency with _call_vagrant_command
