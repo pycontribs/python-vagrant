@@ -632,13 +632,13 @@ class Vagrant:
         the value returned from ssh_config().  For speed, the configuration
         parsed from ssh_config is cached for subsequent calls.
         """
-        if self._cached_conf.get(vm_name) is None or ssh_config is not None:
+        conf = self._cached_conf.get(vm_name)
+        if conf is None or ssh_config is not None:
             if ssh_config is None:
                 ssh_config = self.ssh_config(vm_name=vm_name)
             conf = self._parse_config(ssh_config)
             self._cached_conf[vm_name] = conf
-
-        return self._cached_conf[vm_name]
+        return conf
 
     def ssh_config(self, vm_name=None):
         """
