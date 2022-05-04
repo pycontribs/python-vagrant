@@ -138,6 +138,9 @@ if get_vagrant_executable() is None:
 
 # Classes for listings of Statuses, Boxes, and Plugins
 Status = collections.namedtuple("Status", ["name", "state", "provider"])
+GlobalStatus = collections.namedtuple(
+    "GlobalStatus", ["id", "state", "provider", "home"]
+)
 Box = collections.namedtuple("Box", ["name", "provider", "version"])
 Plugin = collections.namedtuple("Plugin", ["name", "version", "system"])
 
@@ -525,6 +528,24 @@ class Vagrant:
         output = self._run_vagrant_command(["status", "--machine-readable", vm_name])
         return self._parse_status(output)
 
+    def global_status(self, prune=False):
+        """
+        Return the results of a `vagrant global-status` call as a list of one or more
+        GlobalStatus objects.  A GlobalStatus contains the following attributes:
+
+        - id: The VM id.
+        - state: The state of the underlying guest machine (i.e. VM).
+        - provider: the name of the VM provider, e.g. 'virtualbox'.  None
+          if no provider is output by vagrant.
+        - home: the path to the machine vagrantfile for the VM
+        """
+        # machine-readable output are CSV lines
+        cmd = ["global-status", "--machine-readable"]
+        if prune is True:
+            cmd.append("--prune")
+        output = self._run_vagrant_command(cmd)
+        return self._parse_global_status(output)
+
     def _normalize_status(self, status, provider):
         """
         Normalise VM status to cope with state name being different
@@ -560,6 +581,32 @@ class Vagrant:
             )
             statuses.append(status)
 
+        return statuses
+
+    def _parse_global_status(self, output):
+        """
+        Unit testing is so much easier when Vagrant is removed from the
+        equation.
+        """
+        parsed = self._parse_machine_readable_output(output)
+        statuses = []
+        vm_id = state = provider = home = None
+        for timestamp, target, kind, data in parsed:
+            if kind == "machine-id":
+                vm_id = data
+            elif kind == "provider-name":
+                provider = data
+            elif kind == "machine-home":
+                home = data
+            elif kind == "state":
+                state = data
+            if vm_id and provider and home and state:
+                state = self._normalize_status(state, provider)
+                status = GlobalStatus(
+                    id=vm_id, state=state, provider=provider, home=home
+                )
+                statuses.append(status)
+                vm_id = state = provider = home = None
         return statuses
 
     def conf(self, ssh_config=None, vm_name=None):

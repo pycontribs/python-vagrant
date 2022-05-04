@@ -222,6 +222,54 @@ def test_parse_status(vm_dir):
     )
 
 
+def test_parse_global_status(vm_dir):
+    """
+    Test the parsing the output of the `vagrant global-status` command.
+    """
+    listing = """1651503808,,metadata,machine-count,2
+1651503808,,machine-id,9ec0e5d
+1651503808,,provider-name,libvirt
+1651503808,,machine-home,/tmp
+1651503808,,state,preparing
+1651503808,,machine-id,61395ad
+1651503808,,provider-name,libvirt
+1651503808,,machine-home,/home/rtp/.cache/molecule/sbd/default
+1651503808,,state,running
+1651504022,,ui,info,id
+1651504022,,ui,info,name
+1651504022,,ui,info,provider
+1651504022,,ui,info,state
+1651504022,,ui,info,directory
+1651504022,,ui,info,
+1651504022,,ui,info,-------------------------------------------------------------------------------------------------------------
+1651504022,,ui,info,9ec0e5d
+1651504022,,ui,info,bionic
+1651504022,,ui,info,libvirt
+1651504022,,ui,info,preparing
+1651504022,,ui,info,/tmp
+1651504022,,ui,info,
+1651504022,,ui,info,61395ad
+1651504022,,ui,info,instance-sbd-default
+1651504022,,ui,info,libvirt
+1651504022,,ui,info,running
+1651504022,,ui,info,/home/rtp/.cache/molecule/sbd/default
+1651504022,,ui,info,
+11651504022,,ui,info, \\nThe above shows information about all known Vagrant environments\\non this machine...
+"""
+    # Can compare tuples to GlobalStatus class b/c GlobalStatus is a collections.namedtuple.
+    goal = [
+        ("9ec0e5d", "preparing", "libvirt", "/tmp"),
+        ("61395ad", "running", "libvirt", "/home/rtp/.cache/molecule/sbd/default"),
+    ]
+    v = vagrant.Vagrant(vm_dir)
+    parsed = v._parse_global_status(listing)
+    assert (
+        goal == parsed
+    ), "The parsing of the test listing did not match the goal.\nlisting={!r}\ngoal={!r}\nparsed_listing={!r}".format(
+        listing, goal, parsed
+    )
+
+
 def test_parse_aws_status(vm_dir):
     """
     Test the parsing the output of the `vagrant status` command for an aws instance.
