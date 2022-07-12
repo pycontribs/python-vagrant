@@ -49,7 +49,7 @@ jobs:
       TOX_PARALLEL_NO_SPINNER: 1
       TOXENV: ${{ matrix.tox_env }}
       FORCE_COLOR: 1
-      PYTEST_REQPASS: 24
+      PYTEST_REQPASS: 25
 
     steps:
       - name: Check vagrant presence
