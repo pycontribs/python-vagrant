@@ -9,7 +9,7 @@ from vagrant.test import VagrantTestCase
 from .test_vagrant import TEST_BOX_NAME
 
 
-def get_vagrant_root(test_vagrant_root_path):
+def get_vagrant_root(test_vagrant_root_path) -> str:
     return (
         os.path.dirname(os.path.realpath(__file__))
         + "/vagrantfiles/"
