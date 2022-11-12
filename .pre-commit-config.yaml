@@ -7,8 +7,6 @@ ci:
     chore: auto fixes from pre-commit.com hooks
 
     for more information, see https://pre-commit.ci
-default_language_version:
-  python: python3.8
 repos:
   - repo: https://github.com/pre-commit/mirrors-prettier
     # keep it before yamllint
