@@ -44,7 +44,6 @@ extend-ignore =
   F821,  # duplicate of pylint E0602 (undefined-variable)
   F841,  # duplicate of pylint W0612 (unused-variable)
   H,
-  # Temporary disabled during initial adoption:
   D103,
   D104,
   D200,
