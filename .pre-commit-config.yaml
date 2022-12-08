@@ -57,7 +57,7 @@ repos:
     rev: 6.11.0
     hooks:
       - id: pip-compile
-        entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt setup.cfg pyproject.toml --extra test --strip-extras
+        entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt pyproject.toml --extra test --strip-extras
         language: python
         files: ^(requirements\.txt|pyproject\.toml)$
         alias: deps
@@ -65,7 +65,7 @@ repos:
         additional_dependencies:
           - pip>=22.3.1
       - id: pip-compile
-        entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt setup.cfg pyproject.toml --extra test --strip-extras
+        entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt pyproject.toml --extra test --strip-extras --upgrade
         language: python
         files: ^(requirements\.txt|pyproject\.toml)$
         alias: up
