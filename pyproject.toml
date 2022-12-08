@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 # https://peps.python.org/pep-0621/#readme
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dynamic = ["version"]
 name = "python-vagrant"
 description = "Python bindings for interacting with Vagrant virtual machines."
@@ -21,9 +21,9 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Topic :: Utilities",
 ]
 keywords = ["box", "vagrant", "vagrantfile", "virtual-machine", "virtualbox"]
@@ -52,7 +52,7 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 profile = "black"
 
 [tool.mypy]
-python_version = 3.8
+python_version = 3.9
 color_output = true
 error_summary = true
 check_untyped_defs = true
