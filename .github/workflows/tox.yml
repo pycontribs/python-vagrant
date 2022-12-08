@@ -27,7 +27,7 @@ jobs:
         include:
           - tox_env: lint
             os: ubuntu-20.04
-            python-version: "3.10"
+            python-version: "3.9"
             unit: false
             skip_vagrant: true
           - tox_env: packaging
