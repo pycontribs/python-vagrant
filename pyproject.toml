@@ -51,10 +51,58 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+python_version = 3.8
+color_output = true
+error_summary = true
+check_untyped_defs = true
+disallow_untyped_calls = true
+# disallow_untyped_defs = True
+# disallow_any_generics = True
+# disallow_any_unimported = True
+# warn_redundant_casts = True
+# warn_return_any = True
+# warn_unused_configs = True
+# site-packages is here to help vscode mypy integration getting confused
+exclude = "(build|test/local-content|site-packages)"
+
+[tool.pylint.IMPORTS]
+preferred-modules = ["py:pathlib", "unittest:pytest"]
+
+[tool.pylint.MASTER]
+# pylint defaults + f,fh,v,id
+good-names = "i,j,k,_,f,fh,v,id,T"
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+  # On purpose disabled as we rely on black
+  "line-too-long",
+  # TODO(ssbarnea): remove temporary skips adding during initial adoption:
+  "consider-using-f-string",
+  "duplicate-code",
+  "invalid-name",
+  "missing-function-docstring",
+  "no-else-return",
+  "no-self-use",
+  "preferred-module",
+  "protected-access",
+  "too-many-arguments",
+  "too-many-branches",
+  "too-many-lines",
+  "too-many-public-methods",
+  "too-many-statements",
+  "unused-variable",
+]
+
 [tool.pytest.ini_options]
 # ensure we treat warnings as error
 filterwarnings = ["error"]
+addopts = ["-p", "no:pytest_cov"]
 
+# https://code.visualstudio.com/docs/python/testing
+# coverage is re-enabled in `tox.ini`. That approach is safer than
+# `--no-cov` which prevents activation from tox.ini and which also fails
+# when plugin is effectively missing.
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
 write_to = "src/vagrant/_version.py"
