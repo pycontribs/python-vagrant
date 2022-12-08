@@ -1,11 +1,45 @@
 [build-system]
 requires = [
-  "setuptools >= 45.0.0", # required by pyproject+setuptools_scm integration
-  "setuptools_scm >= 6.3.1", # required for "no-local-version" scheme
-  "setuptools_scm_git_archive >= 1.0",
-  "wheel",
+  "setuptools >= 61.0", # PEP-621
+  "setuptools_scm[toml] >= 7.0.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+# https://peps.python.org/pep-0621/#readme
+requires-python = ">=3.8"
+dynamic = ["version"]
+name = "python-vagrant"
+description = "Python bindings for interacting with Vagrant virtual machines."
+readme = "README.md"
+authors = [{ "name" = "Todd Francis DeLuca", "email" = "todddeluca@yahoo.com" }]
+maintainers = [
+  { "name" = "Sorin Sbarnea", "email" = "sorin.sbarnea@gmail.com" }
+]
+license = { text = "MIT" }
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Utilities",
+]
+keywords = ["box", "vagrant", "vagrantfile", "virtual-machine", "virtualbox"]
+
+[project.urls]
+homepage = "https://github.com/pycontribs/python-vagrant"
+repository = "https://github.com/pycontribs/python-vagrant"
+changelog = "https://github.com/pycontribs/python-vagrant/releases"
+
+[project.optional-dependencies]
+test = [
+  "coverage>=6.3",
+  "pytest-cov>=3.0.0",
+  "pytest>=7.0.0",
+  "pytest-plus>=0.2",
+]
 
 [tool.coverage.run]
 source = ["src"]
