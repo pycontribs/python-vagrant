@@ -21,7 +21,7 @@ jobs:
       - name: Switch to using Python 3.9 by default
         uses: actions/setup-python@v4
         with:
-          cache: 'pip'
+          cache: "pip"
           python-version: 3.9
 
       - name: Install tox
