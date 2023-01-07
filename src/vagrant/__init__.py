@@ -309,7 +309,7 @@ class Vagrant:
         """
         self._call_vagrant_command(["init", box_name, box_url])
 
-    def up(
+    def up(  # pylint: disable-msg=too-many-locals
         self,
         vm_name=None,
         no_provision=False,
@@ -317,6 +317,7 @@ class Vagrant:
         provision=None,
         provision_with=None,
         stream_output=False,
+        destroy_on_error=True,
     ) -> Optional[Iterator[str]]:
         """
         Invoke `vagrant up` to start a box or boxes, possibly streaming the
@@ -332,6 +333,8 @@ class Vagrant:
           subprocess might hang.  if False, None is returned and the command
           is run to completion without streaming the output.  Defaults to
           False.
+        destroy_on_error: if True, the newly created will be destroyed if there
+          was any error in the provisioning.
         Note: If provision and no_provision are not None, no_provision will be
         ignored.
         returns: None or a generator yielding lines of output.
@@ -352,7 +355,10 @@ class Vagrant:
             if provision
             else "--no-provision"
         )
-
+        if destroy_on_error:
+            destroy_on_error_arg = "--destroy-on-error"
+        else:
+            destroy_on_error_arg = "--no-destroy-on-error"
         args = [
             "up",
             vm_name,
@@ -361,6 +367,7 @@ class Vagrant:
             provider_arg,
             prov_with_arg,
             providers_arg,
+            destroy_on_error_arg,
         ]
         if stream_output:
             generator = self._stream_vagrant_command(args)

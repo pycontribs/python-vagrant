@@ -63,6 +63,11 @@ SHELL_PROVISION_VAGRANTFILE = os.path.join(
     "vagrantfiles",
     "shell_provision_Vagrantfile",
 )
+SHELL_PROVISION_FAIL_VAGRANTFILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "vagrantfiles",
+    "shell_provision_fail_Vagrantfile",
+)
 # the names of the vms from the multi-vm Vagrantfile.
 VM_1 = "web"
 VM_2 = "db"
@@ -602,6 +607,25 @@ def test_provisioning(vm_dir):
     test_file_contents = _read_test_file(v)
     print("Contents: {}".format(test_file_contents))
     assert test_file_contents == "foo", "The test file should contain 'foo'"
+
+
+@pytest.mark.parametrize("vm_dir", (SHELL_PROVISION_FAIL_VAGRANTFILE,), indirect=True)
+def test_provisioning_no_destory_on_error(vm_dir):
+    """
+    Test support for 'vagrant up --no-destroy-on-error'.
+    """
+    v = vagrant.Vagrant(vm_dir)
+    try:
+        v.up(destroy_on_error=True)
+    except subprocess.CalledProcessError:
+        pass
+    assert v.status()[0].state == v.NOT_CREATED
+
+    try:
+        v.up(destroy_on_error=False)
+    except subprocess.CalledProcessError:
+        pass
+    assert v.status()[0].state == v.RUNNING
 
 
 @pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
