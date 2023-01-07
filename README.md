@@ -38,7 +38,7 @@ backwards-compatible features or bug fixes are added.
 - Vagrant 2.2 or greater. Using the latest version of Vagrant is strongly
   recommended.
 - Vagrant requires VirtualBox, VMWare, or another supported provider.
-- Python 3.8 or newer.
+- Python 3.9 or newer.
 - The Sahara gem for Vagrant is optional. It will allow you to use
   `SandboxVagrant`.
 

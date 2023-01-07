@@ -1,2 +1,0 @@
-include *.md *.txt
-recursive-include tests *.py Vagrantfile

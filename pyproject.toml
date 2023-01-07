@@ -1,15 +1,50 @@
 [build-system]
 requires = [
-  "setuptools >= 45.0.0", # required by pyproject+setuptools_scm integration
-  "setuptools_scm >= 6.3.1", # required for "no-local-version" scheme
-  "setuptools_scm_git_archive >= 1.0",
-  "wheel",
+  "setuptools >= 61.0", # PEP-621
+  "setuptools_scm[toml] >= 7.0.0",
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+# https://peps.python.org/pep-0621/#readme
+requires-python = ">=3.9"
+dynamic = ["version"]
+name = "python-vagrant"
+description = "Python bindings for interacting with Vagrant virtual machines."
+readme = "README.md"
+authors = [{ "name" = "Todd Francis DeLuca", "email" = "todddeluca@yahoo.com" }]
+maintainers = [
+  { "name" = "Sorin Sbarnea", "email" = "sorin.sbarnea@gmail.com" }
+]
+license = { text = "MIT" }
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Utilities",
+]
+keywords = ["box", "vagrant", "vagrantfile", "virtual-machine", "virtualbox"]
+
+[project.urls]
+homepage = "https://github.com/pycontribs/python-vagrant"
+repository = "https://github.com/pycontribs/python-vagrant"
+changelog = "https://github.com/pycontribs/python-vagrant/releases"
+
+[project.optional-dependencies]
+test = [
+  "coverage[toml]>=7.0.3",
+  "pytest>=7.2.0",
+  "pytest-plus>=0.4.0",
+  "pytest-github-actions-annotate-failures>=0.1.8",
+]
+
 [tool.coverage.run]
 source = ["src"]
-branch = true
+parallel = true
+concurrency = ["multiprocessing", "thread"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
@@ -17,10 +52,58 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+python_version = 3.9
+color_output = true
+error_summary = true
+check_untyped_defs = true
+disallow_untyped_calls = true
+# disallow_untyped_defs = True
+# disallow_any_generics = True
+# disallow_any_unimported = True
+# warn_redundant_casts = True
+# warn_return_any = True
+# warn_unused_configs = True
+# site-packages is here to help vscode mypy integration getting confused
+exclude = "(build|test/local-content|site-packages)"
+
+[tool.pylint.IMPORTS]
+preferred-modules = ["py:pathlib", "unittest:pytest"]
+
+[tool.pylint.MASTER]
+# pylint defaults + f,fh,v,id
+good-names = "i,j,k,_,f,fh,v,id,T"
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+  # On purpose disabled as we rely on black
+  "line-too-long",
+  # TODO(ssbarnea): remove temporary skips adding during initial adoption:
+  "consider-using-f-string",
+  "duplicate-code",
+  "invalid-name",
+  "missing-function-docstring",
+  "no-else-return",
+  "no-self-use",
+  "preferred-module",
+  "protected-access",
+  "too-many-arguments",
+  "too-many-branches",
+  "too-many-lines",
+  "too-many-public-methods",
+  "too-many-statements",
+  "unused-variable",
+]
+
 [tool.pytest.ini_options]
 # ensure we treat warnings as error
 filterwarnings = ["error"]
+addopts = ["-p", "no:pytest_cov"]
 
+# https://code.visualstudio.com/docs/python/testing
+# coverage is re-enabled in `tox.ini`. That approach is safer than
+# `--no-cov` which prevents activation from tox.ini and which also fails
+# when plugin is effectively missing.
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
 write_to = "src/vagrant/_version.py"

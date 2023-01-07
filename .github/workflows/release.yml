@@ -18,16 +18,17 @@ jobs:
       TOX_PARALLEL_NO_SPINNER: 1
 
     steps:
-      - name: Switch to using Python 3.8 by default
-        uses: actions/setup-python@v2
+      - name: Switch to using Python 3.9 by default
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          cache: "pip"
+          python-version: 3.9
 
       - name: Install tox
         run: python3 -m pip install --user tox
 
       - name: Check out src from Git
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0 # needed by setuptools-scm
 
@@ -35,8 +36,7 @@ jobs:
         run: python -m tox
 
       - name: Publish to pypi.org
-        if: >- # "create" workflows run separately from "push" & "pull_request"
-          github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@master
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.pypi_password }}

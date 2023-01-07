@@ -18,3 +18,4 @@ Vagrantfile
 *.egg-info/
 *.box
 src/vagrant/_version.py
+coverage.xml
