@@ -35,15 +35,16 @@ changelog = "https://github.com/pycontribs/python-vagrant/releases"
 
 [project.optional-dependencies]
 test = [
-  "coverage>=6.3",
-  "pytest-cov>=3.0.0",
-  "pytest>=7.0.0",
-  "pytest-plus>=0.2",
+  "coverage[toml]>=7.0.3",
+  "pytest>=7.2.0",
+  "pytest-plus>=0.4.0",
+  "pytest-github-actions-annotate-failures>=0.1.8",
 ]
 
 [tool.coverage.run]
 source = ["src"]
-branch = true
+parallel = true
+concurrency = ["multiprocessing", "thread"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]

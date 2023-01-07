@@ -36,8 +36,7 @@ jobs:
         run: python -m tox
 
       - name: Publish to pypi.org
-        if: >- # "create" workflows run separately from "push" & "pull_request"
-          github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@master
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.pypi_password }}

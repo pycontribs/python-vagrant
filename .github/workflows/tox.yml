@@ -13,6 +13,10 @@ on:
       - published # It seems that you can publish directly without creating
   workflow_call:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   tox_envs:
     name: ${{ matrix.tox_env }}
@@ -23,22 +27,14 @@ jobs:
         python-version: ["3.10"]
         os:
           - macos-10.15
-        unit: ["true"]
         include:
           - tox_env: lint
             os: ubuntu-20.04
             python-version: "3.9"
-            unit: false
             skip_vagrant: true
           - tox_env: packaging
             os: ubuntu-20.04
             python-version: "3.10"
-            unit: false
-            skip_vagrant: true
-          - tox_env: packaging
-            os: ubuntu-22.04
-            python-version: "3.11"
-            unit: false
             skip_vagrant: true
           - tox_env: py39
             os: macos-10.15
@@ -68,6 +64,12 @@ jobs:
           # vagrant plugin install vagrant-vbguest
           vagrant plugin list
         if: ${{ ! matrix.skip_vagrant }}
+
+      - name: Cache Vagrant boxes
+        uses: actions/cache@v3
+        with:
+          path: ~/.vagrant.d/boxes
+          key: ${{ runner.os }}-vagrant-${{ hashFiles('**/Vagrantfile') }}
 
       - uses: actions/checkout@v3
         with:
@@ -101,14 +103,17 @@ jobs:
       - name: "tox -e ${{ matrix.tox_env }}"
         run: python3 -m tox
 
+      - name: Produce coverage report
+        if: ${{ startsWith(matrix.tox_env, 'py') }}
+        run: python3 -m tox -e coverage
+
       - name: Upload coverage data
+        if: ${{ startsWith(matrix.tox_env, 'py') }}
         uses: codecov/codecov-action@v3
         with:
-          directory: .tox
-          files: "coverage-*.xml"
+          files: "coverage.xml"
           name: ${{ matrix.tox_env }}
           verbose: true # optional (default = false)
-        if: ${{ startsWith(matrix.tox_env, 'py') }}
 
       - name: Archive logs
         uses: actions/upload-artifact@v3
@@ -117,12 +122,6 @@ jobs:
           path: .tox/**/log/
         # https://github.com/actions/upload-artifact/issues/123
         continue-on-error: true
-
-      - name: Report junit failures
-        uses: shyim/junit-report-annotations-action@3d2e5374f2b13e70f6f3209a21adfdbc42c466ae
-        with:
-          path: .tox/junit.*.xml
-        if: always()
 
   check: # This job does nothing and is only used for the branch protection
     if: always()
