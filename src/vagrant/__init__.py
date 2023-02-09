@@ -288,7 +288,7 @@ class Vagrant:
         output = self._run_vagrant_command(["--version"])
         m = re.search(r"^Vagrant (?P<version>.+)$", output)
         if m is None:
-            raise Exception(
+            raise RuntimeError(
                 "Failed to parse vagrant --version output. output={!r}".format(output)
             )
         return m.group("version")
