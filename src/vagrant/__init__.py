@@ -1120,13 +1120,13 @@ class Vagrant:
         # Make subprocess command
         command = self._make_vagrant_command(args)
         with self.err_cm() as err_fh:
-            sp_args = dict(
-                args=command,
-                cwd=self.root,
-                env=self.env,
-                stdout=subprocess.PIPE,
-                stderr=err_fh,
-            )
+            sp_args = {
+                "args": command,
+                "cwd": self.root,
+                "env": self.env,
+                "stdout": subprocess.PIPE,
+                "stderr": err_fh,
+            }
 
             # Iterate over output lines.
             # See http://stackoverflow.com/questions/2715847/python-read-streaming-input-from-subprocess-communicate#17698359
