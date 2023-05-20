@@ -691,6 +691,18 @@ def test_ssh_command(vm_dir):
     assert output.strip() == "hello"
 
 
+def test_bad_ssh_command(vm_dir, caplog):
+    """
+    Test executing a failing command
+    """
+    v = vagrant.Vagrant(vm_dir, quiet_stderr=False)
+    v.up()
+    v.ssh(command="logger -s oopsie; false")
+    assert "returned with exit code 1" in caplog.text
+    # https://github.com/pytest-dev/pytest/issues/5997
+    # and capsys.readouterr().err == 'vagrant: oopsie'
+
+
 @pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
 def test_ssh_command_multivm(vm_dir):
     """
