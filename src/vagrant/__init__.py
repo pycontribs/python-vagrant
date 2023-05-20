@@ -1101,11 +1101,16 @@ class Vagrant:
         # Make subprocess command
         command = self._make_vagrant_command(args)
         with self.err_cm() as err_fh:
-            return compat.decode(
-                subprocess.check_output(
+            try:
+                output = subprocess.check_output(
                     command, cwd=self.root, env=self.env, stderr=err_fh
                 )
-            )
+            except subprocess.CalledProcessError as err:
+                output = err.output
+                log.error(
+                    "Command %s returned with exit code %i", command, err.returncode
+                )
+            return compat.decode(output)
 
     def _stream_vagrant_command(self, args) -> Iterator[str]:
         """
