@@ -604,6 +604,29 @@ def test_provisioning(vm_dir):
     assert test_file_contents == "foo", "The test file should contain 'foo'"
 
 
+@pytest.mark.parametrize("vm_dir", (VM_VAGRANTFILE,), indirect=True)
+def test_rsync(vm_dir, test_dir):
+    """
+    Test whether rsync updates a synchronized file from containing
+    'I like hats' to 'I like turtles'.
+    """
+    testfile = "python_vagrant_rsync_test_file"
+    testfile_path = "{}/{}".format(test_dir, testfile)
+    ilike1 = "hats"
+    ilike2 = "turtles"
+    with open(testfile_path, "w", encoding="UTF-8") as fh:
+        fh.write("I like {}".format(ilike1))
+    v = vagrant.Vagrant(vm_dir, quiet_stdout=False, quiet_stderr=False)
+    v.up()
+    output = v.ssh(command="cat /vagrant/{}".format(testfile))
+    assert output.strip() == "I like {}".format(ilike1)
+    with open(testfile_path, "w", encoding="UTF-8") as fh:
+        fh.write("I like {}".format(ilike2))
+    v.rsync()
+    output = v.ssh(command="cat /vagrant/{}".format(testfile))
+    assert output.strip() == "I like {}".format(ilike2)
+
+
 @pytest.mark.parametrize("vm_dir", (MULTIVM_VAGRANTFILE,), indirect=True)
 def test_multivm_lifecycle(vm_dir):
     v = vagrant.Vagrant(vm_dir)
