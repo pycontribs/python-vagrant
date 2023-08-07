@@ -12,7 +12,7 @@ ci:
 repos:
   - repo: https://github.com/pre-commit/mirrors-prettier
     # keep it before yamllint
-    rev: v3.0.0-alpha.9-for-vscode
+    rev: v3.0.1
     hooks:
       - id: prettier
         additional_dependencies:
@@ -29,11 +29,11 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.7.0
     hooks:
       - id: black
   - repo: https://github.com/pycqa/flake8.git
-    rev: 6.0.0
+    rev: 6.1.0
     hooks:
       - id: flake8
         language_version: python3
@@ -54,7 +54,7 @@ repos:
         additional_dependencies:
           - pytest
   - repo: https://github.com/jazzband/pip-tools
-    rev: 6.14.0
+    rev: 7.2.0
     hooks:
       - id: pip-compile
         entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt pyproject.toml --extra test --strip-extras
