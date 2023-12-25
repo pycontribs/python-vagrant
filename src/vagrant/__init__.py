@@ -381,6 +381,13 @@ class Vagrant:
         providers_arg = None if provision_with is None else ",".join(provision_with)
         self._call_vagrant_command(["provision", vm_name, prov_with_arg, providers_arg])
 
+    def rsync(self, vm_name=None) -> None:
+        """
+        Re-syncs data directories.
+        vm_name: optional VM name string.
+        """
+        self._call_vagrant_command(["rsync", vm_name])
+
     def reload(
         self, vm_name=None, provision=None, provision_with=None, stream_output=False
     ) -> Optional[Iterator[str]]:
