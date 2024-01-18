@@ -66,7 +66,7 @@ jobs:
         if: ${{ ! matrix.skip_vagrant }}
 
       - name: Cache Vagrant boxes
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.vagrant.d/boxes
           key: ${{ runner.os }}-vagrant-${{ hashFiles('**/Vagrantfile') }}
@@ -82,14 +82,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Enable vagrant box caching
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.vagrant.d/boxes
           key: ${{ runner.os }}-${{ matrix.tox_env }}-vagrantbox-${{ hashFiles('tests/tools/create_dummy_box.sh', 'tests/test_vagrant*py', '**/Vagrantfile', 'tests/vagrantfiles/*Vagrantfile') }}
 
       - name: Pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-${{ matrix.tox_env }}-pip-${{ hashFiles('constraints.txt', 'setup.cfg', 'tox.ini', 'pyproject.toml', '.pre-commit-config.yaml', 'pytest.ini') }}
