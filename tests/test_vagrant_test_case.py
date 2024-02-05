@@ -3,6 +3,7 @@ Tests for the various functionality provided by the VagrantTestCase class
 
 There are a handful of classes to try to provide multiple different varying samples of possible setups
 """
+
 import os
 from vagrant import Vagrant
 from vagrant.test import VagrantTestCase
