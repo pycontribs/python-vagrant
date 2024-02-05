@@ -348,9 +348,7 @@ class Vagrant:
         provision_arg = (
             None
             if provision is None
-            else "--provision"
-            if provision
-            else "--no-provision"
+            else "--provision" if provision else "--no-provision"
         )
 
         args = [
@@ -409,9 +407,7 @@ class Vagrant:
         provision_arg = (
             None
             if provision is None
-            else "--provision"
-            if provision
-            else "--no-provision"
+            else "--provision" if provision else "--no-provision"
         )
 
         args = ["reload", vm_name, provision_arg, prov_with_arg, providers_arg]
