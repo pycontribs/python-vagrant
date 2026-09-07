@@ -12,14 +12,14 @@ ci:
 repos:
   - repo: https://github.com/pre-commit/mirrors-prettier
     # keep it before yamllint
-    rev: v3.0.3
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         additional_dependencies:
           - prettier
           - prettier-plugin-toml
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -28,12 +28,12 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: debug-statements
-  - repo: https://github.com/psf/black
-    rev: 23.7.0
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
     hooks:
       - id: black
   - repo: https://github.com/pycqa/flake8.git
-    rev: 6.1.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         language_version: python3
@@ -42,19 +42,19 @@ repos:
           - flake8-docstrings>=1.6.0
           - flake8-pytest-style>=1.6.0
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v2.3.1
     hooks:
       - id: mypy
         # empty args needed in order to match mypy cli behavior
         # args: [--strict]
   - repo: https://github.com/pycqa/pylint
-    rev: v3.0.0a7
+    rev: v4.0.8
     hooks:
       - id: pylint
         additional_dependencies:
           - pytest
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.3.0
+    rev: v7.6.1
     hooks:
       - id: pip-compile
         entry: pip-compile --resolver=backtracking -q --no-annotate --output-file=requirements.txt pyproject.toml --extra test --strip-extras
