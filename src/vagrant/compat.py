@@ -9,7 +9,6 @@ Python 2/3 compatibility module.
 import locale
 import sys
 
-
 PY2 = sys.version_info[0] == 2
 
 

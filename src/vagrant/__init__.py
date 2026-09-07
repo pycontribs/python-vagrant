@@ -25,7 +25,6 @@ from typing import Dict, Iterator, List, Optional, Union
 # local
 from . import compat
 
-
 # python package version dumped by setuptools-scm
 try:
     from ._version import version as __version__
@@ -348,9 +347,7 @@ class Vagrant:
         provision_arg = (
             None
             if provision is None
-            else "--provision"
-            if provision
-            else "--no-provision"
+            else "--provision" if provision else "--no-provision"
         )
 
         args = [
@@ -409,9 +406,7 @@ class Vagrant:
         provision_arg = (
             None
             if provision is None
-            else "--provision"
-            if provision
-            else "--no-provision"
+            else "--provision" if provision else "--no-provision"
         )
 
         args = ["reload", vm_name, provision_arg, prov_with_arg, providers_arg]
