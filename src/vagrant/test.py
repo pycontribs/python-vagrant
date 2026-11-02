@@ -4,6 +4,7 @@ A TestCase class, tying together the Vagrant class.
 It also removes some of the boilerplate involved in writing tests that leverage
 vagrant boxes.
 """
+
 from typing import Dict, List, Optional
 from unittest import TestCase
 from vagrant import Vagrant, stderr_cm
